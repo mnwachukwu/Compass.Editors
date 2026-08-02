@@ -131,3 +131,8 @@ larger piece, and not written.
 What holds up publishing is the compiler rather than the extension: debugging needs `pc` on the
 reader's PATH, and Profi-C is not on NuGet yet. An extension that installs cleanly and then
 cannot start anything is worse than one nobody has.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The extension carries [its own copy](vscode/LICENSE), since a
+packaged `.vsix` holds only what is inside `vscode/` and the manifest declares the license there.
