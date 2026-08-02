@@ -106,10 +106,12 @@ dotnet test
 ```
 
 The tokenization tests additionally need the TextMate engine, which is fetched rather than
-committed:
+committed. Install it from the extension's own folder, since npm's `--prefix` means the global
+install location and not every version honors it for a local install:
 
 ```bash
-npm install --prefix vscode
+cd vscode
+npm install
 ```
 
 Without it those tests skip and say so.

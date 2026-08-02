@@ -55,9 +55,14 @@ jobs:
 
       # The TextMate engine VS Code itself tokenizes with, fetched rather than committed. The
       # tests that put a .pc file through it skip until this has run.
+      #
+      # Run from the folder holding the manifest rather than pointing npm at it from above.
+      # --prefix is documented as where *global* installs go, and whether a local install honors
+      # it too varies by npm version — on the ones that do not, it installs against the working
+      # directory instead and fails there for want of a package.json.
       - name: Install the TextMate engine
-        working-directory: Profi-C.Editors
-        run: npm install --prefix vscode
+        working-directory: Profi-C.Editors/vscode
+        run: npm install
 
       - name: Restore
         working-directory: Profi-C.Editors
