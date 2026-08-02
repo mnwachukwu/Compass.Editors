@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/tests/">
+    <Project Path="tests/ProfiC.Editors.Tests/ProfiC.Editors.Tests.csproj" />
+  </Folder>
+</Solution>

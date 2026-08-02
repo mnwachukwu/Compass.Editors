@@ -1,0 +1,9 @@
+# Fetched rather than committed. 'npm install' in vscode/ restores them.
+node_modules/
+
+# Build output from the test project.
+bin/
+obj/
+
+# Packaged extensions.
+*.vsix
