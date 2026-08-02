@@ -184,8 +184,16 @@ hidden. Where it does not — the breakpoint menu is offered before a session ex
 
 ### When nothing happens
 
-A debugger that starts and immediately ends is nearly always one of three things, in the order
-worth checking:
+**Check whether the folder is trusted first.** In Restricted Mode, VS Code disables debugging
+entirely and does not load extensions — so `F5` does nothing, and a `.pc` file is not even
+colored. The banner saying so is easy to dismiss without reading, and a temporary folder is
+never trusted, which makes this the likeliest thing to hit on the throwaway folder somebody
+tries this in first. `Ctrl+Shift+P` → "Workspaces: Manage Workspace Trust".
+
+**No color on a `.pc` file is the tell.** Highlighting is declarative and needs no extension to
+run, so a file that is not colored means the extension was not loaded at all — trust, or a link
+pointing at nothing. A file that *is* colored but will not debug is a different problem, and one
+of these:
 
 1. **`pc` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
    it was launched, which on Windows may predate a `dotnet tool install`. Restarting the editor
@@ -194,6 +202,8 @@ worth checking:
    diagnostics in the message, rather than starting and dying — so read the notification.
 3. **The manifest is stale in the editor.** See the version note above; a `package.json` change
    without a bump goes on serving what was recorded at the scan.
+4. **`extension.js` did not load.** Nothing says so in the editor; the debugger is simply absent
+   from the menu. Output → Log (Extension Host) is where it is recorded.
 
 ## What it colors
 
