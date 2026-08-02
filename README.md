@@ -11,20 +11,36 @@ does with a `.pc` file before and while the compiler is involved.
 
 | | |
 |---|---|
-| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.pc` and `.pcp`, and the language configuration |
-| [tests/](tests) | What the grammars actually do, run through the engine VS Code runs |
+| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.pc` and `.pcp`, the language configuration, and the debugger |
+| [tests/](tests) | What the grammars actually do, run through the engine VS Code runs, and what the manifest and the extension agree about |
+
+## Debugging, and where its two halves live
+
+Breakpoints, stepping, a call stack and a variables pane all work. **Almost none of it is in
+this repository**, and that is the design rather than an accident.
+
+Everything about *how* to debug — where to stop, what counts as one step, which names are worth
+showing — is in Profi-C, in an adapter that speaks the Debug Adapter Protocol over its standard
+input and output. It is reached with `pc debug` and it works with any client that speaks the
+protocol, VS Code being one of them.
+
+What is here is the little that must be. VS Code can be told declaratively that a debugger
+exists, but not to run whatever `pc` the reader has installed — the path a manifest names is
+resolved inside the extension folder, and the compiler is not in there. So
+[`vscode/extension.js`](vscode/extension.js) answers two questions and no others: which command
+to start, and what to debug when nobody has written a launch.json.
+
+The split is worth keeping. Two implementations of one set of decisions is two answers to every
+question about them, and the second one is always the one that is out of date.
 
 ## What is planned
 
 Roughly in the order it is wanted:
 
-1. **A debug adapter** — breakpoints, step over, step into, a call stack, a variables pane.
-   Speaks the Debug Adapter Protocol and drives the Profi-C interpreter, which already walks one
-   statement at a time and carries a source span on every node.
-2. **Project management** — commands for creating a `.pcp`, adding and removing files, setting
+1. **Project management** — commands for creating a `.pcp`, adding and removing files, setting
    the entry point, and running or cleaning without leaving the editor.
-3. **A language server** — live diagnostics, completion, hover types, go to definition.
-4. **A formatter.**
+2. **A language server** — live diagnostics, completion, hover types, go to definition.
+3. **A formatter.**
 
 ## The vocabulary, and why the tests need Profi-C beside them
 
@@ -65,10 +81,18 @@ npm install --prefix vscode
 
 Without it those tests skip and say so.
 
+Node is also what checks that `extension.js` parses, and that test skips the same way. It is
+worth having because nothing else would notice: VS Code says nothing useful about an entry point
+it cannot load — the extension simply never activates, and a debugger contributed in the
+manifest is absent from the menu for a reason recorded only in an extension host log.
+
 ## Why the extension is not published yet
 
 The grammar is Tier 1 of the plan in Profi-C's design record: syntax highlighting, which
-delivers most of the perceived value for a few hours of work. Diagnostics, completion, and
-go-to-definition are the language server, which is a much larger piece and is not written.
-Publishing to the Marketplace before the debugger exists would set an expectation the extension
-does not yet meet.
+delivers most of the perceived value for a few hours of work. The debugger is Tier 2 and is now
+here. Diagnostics, completion, and go-to-definition are the language server — Tier 3, a much
+larger piece, and not written.
+
+What holds up publishing is the compiler rather than the extension: debugging needs `pc` on the
+reader's PATH, and Profi-C is not on NuGet yet. An extension that installs cleanly and then
+cannot start anything is worse than one nobody has.

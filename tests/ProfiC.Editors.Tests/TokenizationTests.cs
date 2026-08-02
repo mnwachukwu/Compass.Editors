@@ -30,7 +30,7 @@ public sealed class TokenizationTests : EditorTestBase
     {
         if (!Directory.Exists(Path.Combine(Extension, "node_modules")))
         {
-            Assert.Ignore("run 'npm install' in editors/vscode to tokenize");
+            Assert.Ignore("run 'npm install' in the vscode folder to tokenize");
         }
 
         ProcessStartInfo start = new()

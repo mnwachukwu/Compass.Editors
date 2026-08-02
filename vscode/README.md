@@ -1,20 +1,21 @@
 # Profi-C for VS Code
 
-Syntax highlighting for `.pc` programs and `.pcp` project files, and the editor behavior that
-comes with knowing the language: bracket matching, `Ctrl+/` inserting `#`, auto-closing quotes,
-and indentation that follows `end`.
+Syntax highlighting for `.pc` programs and `.pcp` project files, the editor behavior that comes
+with knowing the language — bracket matching, `Ctrl+/` inserting `#`, auto-closing quotes, and
+indentation that follows `end` — and **a debugger**: breakpoints, stepping, a call stack, and a
+variables pane.
 
-Nothing here runs the compiler. There are no diagnostics, no completion, and no hover — those
-need a language server, which is a later piece of work.
+There are still no diagnostics, no completion, and no hover. Those need a language server, which
+is a later piece of work.
 
 ## Installing it
 
 **This is not on the VS Code Marketplace**, and will not be for a while — Profi-C is young
 enough that publishing an extension for it would be putting up a shopfront before there is
 anything to sell. Installing it means putting this folder where VS Code looks, which is all the
-Marketplace would do anyway. There is no build step: everything here is declarative, so nothing
-is compiled and nothing is downloaded. Once it is published, `code --install-extension` replaces
-all of this.
+Marketplace would do anyway. There is no build step: the grammars are declarative and the one
+script is plain JavaScript with nothing to compile and no dependencies to fetch. Once it is
+published, `code --install-extension` replaces all of this.
 
 There are two ways to do it, and which one is right depends on whether the grammar is going to
 change under you.
@@ -27,16 +28,16 @@ the repository. A change shows up on the next window reload and there is no copy
 **Windows** needs neither an elevated shell nor Developer Mode if you use a *junction*:
 
 ```powershell
-$repo = "D:\Repos\Profi-C"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-0.1.0"
+$repo = "D:\Repos\Profi-C.Editors"
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0"
 if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
-New-Item -ItemType Junction -Path $dest -Target "$repo\editors\vscode"
+New-Item -ItemType Junction -Path $dest -Target "$repo\vscode"
 ```
 
 A **symbolic link** does the same job and needs an elevated shell, or Developer Mode turned on:
 
 ```powershell
-New-Item -ItemType SymbolicLink -Path $dest -Target "$repo\editors\vscode"
+New-Item -ItemType SymbolicLink -Path $dest -Target "$repo\vscode"
 ```
 
 The two differ in ways that do not matter here. A junction is resolved by the file system and
@@ -48,9 +49,9 @@ elevation a symbolic link asks for buys nothing in this case.
 **macOS and Linux** have one answer:
 
 ```bash
-repo=~/Profi-C
-dest=~/.vscode/extensions/profi-c-0.1.0
-rm -rf "$dest" && ln -s "$repo/editors/vscode" "$dest"
+repo=~/Profi-C.Editors
+dest=~/.vscode/extensions/profi-c-1.1.0
+rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 ```
 
 > **Removing a link, when the time comes.** On Windows, do **not** use
@@ -58,10 +59,10 @@ rm -rf "$dest" && ln -s "$repo/editors/vscode" "$dest"
 > delete what is on the other side of it, which here is the repository. Remove the link alone:
 >
 > ```powershell
-> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c-0.1.0" -Force).Delete()
+> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0" -Force).Delete()
 > ```
 >
-> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c-0.1.0"` with no `/s`. On macOS and
+> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c-1.1.0"` with no `/s`. On macOS and
 > Linux, `rm` on the link removes the link.
 
 ### Copying it — for anyone who only wants to read Profi-C
@@ -71,19 +72,19 @@ Change the first line to wherever you cloned the repository, then run the rest a
 **Windows** (PowerShell):
 
 ```powershell
-$repo = "D:\Repos\Profi-C"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-0.1.0"
+$repo = "D:\Repos\Profi-C.Editors"
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0"
 Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
-Copy-Item "$repo\editors\vscode\*" $dest -Recurse -Force
+Copy-Item "$repo\vscode\*" $dest -Recurse -Force
 ```
 
 **macOS and Linux**:
 
 ```bash
-repo=~/Profi-C
-dest=~/.vscode/extensions/profi-c-0.1.0
-rm -rf "$dest" && mkdir -p "$dest" && cp -R "$repo/editors/vscode/." "$dest"
+repo=~/Profi-C.Editors
+dest=~/.vscode/extensions/profi-c-1.1.0
+rm -rf "$dest" && mkdir -p "$dest" && cp -R "$repo/vscode/." "$dest"
 ```
 
 ### Either way
@@ -112,10 +113,87 @@ Nothing is wrong with the grammar in either case; the editor is reading an old o
 hunting for a bug, check the installed copy holds the rule you expect:
 
 ```powershell
-Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c-0.1.0\syntaxes\profi-c.tmLanguage.json"
+Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0\syntaxes\profi-c.tmLanguage.json"
 ```
 
 A link cannot go stale, which is the whole argument for one.
+
+## Debugging
+
+Set a breakpoint in the margin of a `.pc` file, press `F5`, and the program stops there. Step
+over, step into, and step out all work; the call stack names every function in progress and the
+variables pane shows what is in scope.
+
+### What it needs
+
+**The compiler on your PATH.** Everything about debugging happens inside `pc debug`, which
+speaks the Debug Adapter Protocol over its standard input and output. This extension starts it
+and gets out of the way — it holds no second copy of the rules about where to stop.
+
+```bash
+dotnet tool install --global profi-c
+```
+
+Where `pc` is somewhere else — installed to a folder of its own, or built from the Profi-C
+repository — name it in your settings:
+
+```jsonc
+"profi-c.compilerPath": "D:\\Repos\\Profi-C\\src\\ProfiC.Cli\\bin\\Debug\\net10.0\\profi-c.exe"
+```
+
+A single configuration can override it too, with `compilerPath` beside `program`, which is the
+way to debug one project against a build of the compiler without changing anything globally.
+
+### Without a launch.json
+
+`F5` on an open `.pc` file debugs that file. Nothing has to be configured, which is deliberate:
+asking a beginner to write a launch.json first is asking them to learn the editor before the
+language.
+
+### With one
+
+For anything more — a fixed entry point, a project file, arguments you do not want to retype —
+"create a launch.json" offers a Profi-C configuration:
+
+```jsonc
+{
+  "type": "profi-c",
+  "request": "launch",
+  "name": "Debug the storefront",
+  "program": "${workspaceFolder}/storefront/storefront.pcp"
+}
+```
+
+`program` may be a `.pc` file or a `.pcp` project. Naming a `.pc` file debugs it together with
+the shared code beside it, exactly as `pc run` compiles it — so stepping into a function
+declared in another file works, and the call stack opens whichever file each frame is in.
+
+### What it does not do
+
+- **No expression evaluation.** The debug console shows what the program prints. Typing into it
+  is answered with a refusal rather than a result — nothing in Profi-C evaluates an expression
+  outside a running program yet.
+- **No conditional breakpoints, hit counts, or log points.** A condition written on a breakpoint
+  is ignored, and the breakpoint fires as an ordinary one.
+- **No changing a value while stopped.** The variables pane is a view, not a control.
+- **No attaching to a running program.** A session launches its own.
+
+The adapter claims none of these, so where VS Code hides an unsupported feature it will be
+hidden. Where it does not — the breakpoint menu is offered before a session exists to be asked
+— setting one is allowed and then does nothing.
+
+### When nothing happens
+
+A debugger that starts and immediately ends is nearly always one of three things, in the order
+worth checking:
+
+1. **`pc` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
+   it was launched, which on Windows may predate a `dotnet tool install`. Restarting the editor
+   is usually enough; naming the full path in `profi-c.compilerPath` always is.
+2. **The program does not compile.** A launch that will not build is refused with the
+   diagnostics in the message, rather than starting and dying — so read the notification.
+3. **The manifest is stale in the editor.** See the version note above; a `package.json` change
+   without a bump goes on serving what was recorded at the scan.
 
 ## What it colors
 
@@ -160,8 +238,9 @@ nobody ever sees, which is why this extension no longer carries one.
 
 So every color on a Profi-C file comes from one of two places:
 
-1. **A `textMateRules` entry**, in your user or workspace settings. This repository has one in
-   `.vscode/settings.json`, which is what colors these files while working on the language.
+1. **A `textMateRules` entry**, in your user or workspace settings. The Profi-C repository has
+   one in its `.vscode/settings.json`, which is what colors those files while working on the
+   language.
 2. **Your theme**, for any scope no rule names.
 
 That second case is where the confusion lives. A theme knows nothing about `.profi-c` scopes,
@@ -211,10 +290,11 @@ documentation label inherits from `constant.language`, which several dark themes
 color as a keyword. **A palette written for the language does better**, because it can separate
 the things a reader of *this* language wants separated.
 
-That palette lives in [`.vscode/settings.json`](../../.vscode/settings.json) at the root of
-this repository, which is why a `.pc` file opened here looks the same for everyone. To use it
-in your own projects, copy its `editor.tokenColorCustomizations` block into your user
-`settings.json`. It applies as soon as it is saved — no reload, and nothing to install.
+That palette lives in `.vscode/settings.json` **at the root of the Profi-C repository**, not
+this one — it is what colors `.pc` files while the language is being worked on, and `.pc` files
+are over there. To use it in your own projects, copy its `editor.tokenColorCustomizations`
+block into your user `settings.json`. It applies as soon as it is saved — no reload, and
+nothing to install.
 
 It is the only copy, deliberately: two palettes in two files drift, and the one in this README
 had already gone stale on three colors before it was removed. A shortened version, to show the

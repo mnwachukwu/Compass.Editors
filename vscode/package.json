@@ -1,16 +1,18 @@
 {
   "name": "profi-c",
   "displayName": "Profi-C",
-  "description": "Syntax highlighting for Profi-C.",
-  "version": "1.0.0",
+  "description": "Syntax highlighting and debugging for Profi-C.",
+  "version": "1.1.0",
   "publisher": "profi-c",
   "license": "MIT",
   "engines": { "vscode": "^1.75.0" },
+  "main": "./extension.js",
   "devDependencies": {
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.1.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": ["Programming Languages", "Debuggers"],
+  "activationEvents": ["onDebugResolve:profi-c"],
   "contributes": {
     "languages": [
       {
@@ -37,6 +39,70 @@
         "scopeName": "source.profi-c-project",
         "path": "./syntaxes/profi-c-project.tmLanguage.json"
       }
-    ]
+    ],
+    "breakpoints": [{ "language": "profi-c" }],
+    "debuggers": [
+      {
+        "type": "profi-c",
+        "label": "Profi-C",
+        "languages": ["profi-c", "profi-c-project"],
+        "configurationAttributes": {
+          "launch": {
+            "required": ["program"],
+            "properties": {
+              "program": {
+                "type": "string",
+                "description": "The .pc file or .pcp project to debug. Naming a .pc file debugs it together with the shared code beside it, the same way 'pc run' does.",
+                "default": "${file}"
+              },
+              "compilerPath": {
+                "type": "string",
+                "description": "The pc command to run for this configuration, overriding the profi-c.compilerPath setting."
+              }
+            }
+          }
+        },
+        "initialConfigurations": [
+          {
+            "type": "profi-c",
+            "request": "launch",
+            "name": "Debug the open Profi-C file",
+            "program": "${file}"
+          }
+        ],
+        "configurationSnippets": [
+          {
+            "label": "Profi-C: debug the open file",
+            "description": "Debugs whichever Profi-C file is in front of you when you start.",
+            "body": {
+              "type": "profi-c",
+              "request": "launch",
+              "name": "Debug the open Profi-C file",
+              "program": "^\"\\${file}\""
+            }
+          },
+          {
+            "label": "Profi-C: debug a project",
+            "description": "Debugs a .pcp project, which compiles exactly the files it lists.",
+            "body": {
+              "type": "profi-c",
+              "request": "launch",
+              "name": "Debug the project",
+              "program": "^\"\\${workspaceFolder}/app.pcp\""
+            }
+          }
+        ]
+      }
+    ],
+    "configuration": {
+      "title": "Profi-C",
+      "properties": {
+        "profi-c.compilerPath": {
+          "type": "string",
+          "default": "pc",
+          "description": "The Profi-C compiler to run when debugging. The default finds it on PATH, which is where 'dotnet tool install' puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
+        }
+      }
+    }
   }
 }
