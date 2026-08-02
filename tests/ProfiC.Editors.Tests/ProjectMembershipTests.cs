@@ -10,6 +10,11 @@ namespace ProfiC.Editors.Tests;
 /// Running the nearest project regardless would compile a program the reader is not looking at,
 /// print its output, and look exactly like the button working — which is the worst kind of wrong
 /// for a button somebody presses to check what they just wrote.</para>
+/// <para><b>The answer is the compiler's.</b> The extension runs <c>pc project</c> rather than
+/// reading a <c>.pcp</c> itself, since a second reader of that format would agree with the first
+/// until it gained a word — and disagree silently, in the direction that runs a program nobody
+/// was looking at. What these tests hold is that the extension asks, and does the right thing
+/// with each answer.</para>
 /// <para>Driven through the extension's own code rather than a copy of the rules, so that what
 /// is asserted is what the button does. The editor is stubbed; nothing here needs VS Code.</para>
 /// </summary>
@@ -17,14 +22,21 @@ namespace ProfiC.Editors.Tests;
 public sealed class ProjectMembershipTests : EditorTestBase
 {
     /// <summary>What the extension decided for one file.</summary>
-    private sealed record Answer(string? Project, int Searched, string Runs, string? Said);
+    private sealed record Answer(
+        string? Project,
+        int Searched,
+        bool Asked,
+        string Runs,
+        string? Said);
 
     /// <summary>
-    /// Asks the extension about some files, or skips where node is not installed — the same way
-    /// tokenizing skips, and for the same reason.
+    /// Asks the extension about some files, or skips where node or a built compiler is missing —
+    /// the same way tokenizing skips, and for the same reason.
     /// </summary>
     private static Answer[] Ask(params string[] files)
     {
+        string compiler = CompilerOrIgnore();
+
         ProcessStartInfo start = new()
         {
             FileName = "node",
@@ -36,6 +48,7 @@ public sealed class ProjectMembershipTests : EditorTestBase
         };
 
         start.ArgumentList.Add(Path.Combine("tools", "project.js"));
+        start.ArgumentList.Add(compiler);
 
         Process node;
 
@@ -61,9 +74,20 @@ public sealed class ProjectMembershipTests : EditorTestBase
 
             Assert.That(node.ExitCode, Is.Zero, failed);
 
-            return JsonSerializer.Deserialize<Answer[]>(
+            Answer[] answers = JsonSerializer.Deserialize<Answer[]>(
                 answered,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+
+            // Checked here rather than left to each test, because a compiler that cannot answer
+            // makes every one of them fail as though the extension had decided something. It has
+            // not: it asked and got nothing. A published build older than the command is the
+            // usual cause, and it is the failure worth naming, having cost an evening once.
+            Assert.That(
+                answers.All(answer => answer.Asked),
+                Is.True,
+                $"'{compiler} project' answered nothing — republish it");
+
+            return answers;
         }
     }
 
@@ -81,15 +105,29 @@ public sealed class ProjectMembershipTests : EditorTestBase
             Directory.CreateDirectory(Path.Combine(Folder, "app"));
             Directory.CreateDirectory(Path.Combine(Folder, "elsewhere"));
 
+            // Two of these lines say "source" and neither is one: the project reader takes both
+            // comment forms, and stops at 'end project'. They are here because anything scanning
+            // lines for the word reads them as claims.
             File.WriteAllText(
                 Path.Combine(Folder, "app", "app.pcp"),
                 """
                 project App
                     source Program.pc
+                    ##
+                        Left out for now.
+                        source Draft.pc
+                    ##
                 end project
+                source Stray.pc
                 """);
 
-            foreach (string file in new[] { "app/Program.pc", "app/Loose.pc", "elsewhere/Idea.pc" })
+            string[] files =
+            [
+                "app/Program.pc", "app/Loose.pc", "app/Draft.pc", "app/Stray.pc",
+                "elsewhere/Idea.pc",
+            ];
+
+            foreach (string file in files)
             {
                 File.WriteAllText(Path.Combine(Folder, file.Replace('/', Path.DirectorySeparatorChar)), Program);
             }
@@ -172,6 +210,29 @@ public sealed class ProjectMembershipTests : EditorTestBase
             Assert.That(answer.Runs, Is.EqualTo("Idea.pc"));
             Assert.That(answer.Searched, Is.Zero, "there was no project to reject");
             Assert.That(answer.Said, Does.Contain("no project found"));
+        });
+    }
+
+    /// <summary>
+    /// <para>A line the compiler does not read is not a claim, whatever it looks like.</para>
+    /// <para>The case that decides whether asking the compiler was worth doing. A <c>source</c>
+    /// inside a block comment, and one written after <c>end project</c>, both read as claims to
+    /// anything scanning a project file for the word — and neither is one. Being wrong here is
+    /// quiet and expensive: the button compiles and runs a program the reader is not looking at,
+    /// prints its output, and looks exactly like the button working.</para>
+    /// </summary>
+    [TestCase("app/Draft.pc", "commented out")]
+    [TestCase("app/Stray.pc", "written after the project closed")]
+    public void ALineTheCompilerDoesNotReadIsNotAClaim(string file, string why)
+    {
+        using Workspace workspace = new();
+
+        Answer answer = Ask(workspace.At(file))[0];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(answer.Project, Is.Null, why);
+            Assert.That(answer.Runs, Is.EqualTo(Path.GetFileName(file)));
         });
     }
 

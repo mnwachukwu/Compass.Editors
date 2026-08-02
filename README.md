@@ -1,5 +1,8 @@
 # Profi-C.Editors
 
+[![CI (Windows)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-windows.yml)
+[![CI (Linux)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-linux.yml)
+
 Editor support for [Profi-C](https://github.com/mnwachukwu/Profi-C): the VS Code extension, and
 the tooling that will grow around it.
 
@@ -11,7 +14,7 @@ does with a `.pc` file before and while the compiler is involved.
 
 | | |
 |---|---|
-| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.pc` and `.pcp`, the language configuration, and the debugger |
+| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.pc` and `.pcp`, the language configuration, the debugger, Run and Build buttons, the Outline, and the color palette |
 | [tests/](tests) | What the grammars actually do, run through the engine VS Code runs, and what the manifest and the extension agree about |
 
 ## Debugging, and where its two halves live
@@ -27,11 +30,38 @@ protocol, VS Code being one of them.
 What is here is the little that must be. VS Code can be told declaratively that a debugger
 exists, but not to run whatever `pc` the reader has installed — the path a manifest names is
 resolved inside the extension folder, and the compiler is not in there. So
-[`vscode/extension.js`](vscode/extension.js) answers two questions and no others: which command
-to start, and what to debug when nobody has written a launch.json.
+[`vscode/extension.js`](vscode/extension.js) starts the adapter, and offers a configuration to
+anyone who has not written a launch.json.
 
 The split is worth keeping. Two implementations of one set of decisions is two answers to every
 question about them, and the second one is always the one that is out of date.
+
+## What is asked, and what is decided here
+
+The extension has grown past the debugger — Run and Build buttons, a target platform, the
+Outline, the palette — and the line that keeps it honest is this: **anything with a Profi-C
+answer is asked of `pc` rather than worked out here.**
+
+| Question | Asked with |
+|---|---|
+| What does this file declare? | `pc outline` |
+| Which `.pcp` builds this file? | `pc project` |
+| Which platforms can be built for? | `pc platforms` |
+| What words does the language reserve? | `pc vocabulary`, read by the tests |
+| Where should this stop, and what is in scope? | `pc debug`, which is the whole adapter |
+
+Each could have been written in JavaScript, and each would then be a second definition of Profi-C
+that agreed with the first until somebody added a construct. That failure is silent: a member
+stops appearing in the Outline, a keyword stops being colored, and nothing reports it.
+
+Membership was written here once, and is the reason the table has a row for it. Reading a `.pcp`
+by scanning lines for the word `source` looks right and is not: it counts a `source` inside a
+`##` comment, and one written after `end project`, both of which the compiler ignores. The button
+would then compile and run a program the reader was not looking at — and look exactly like the
+button working, which is the failure this whole arrangement exists to prevent.
+
+**`extension.js` now touches no files at all.** Every question with a Profi-C answer leaves the
+process, and what is left here is where things go in the editor.
 
 ## What is planned
 
@@ -63,8 +93,11 @@ published file exists to prevent — the grammar would agree with a list that wa
 date, and nothing anywhere would fail.
 
 **Where Profi-C is not beside this, those tests skip rather than fail**, since a checkout of one
-repository alone is an ordinary state to be in. Everything else still runs. CI checks out both,
-so the skip is a local convenience rather than a hole.
+repository alone is an ordinary state to be in. Everything else still runs.
+
+CI checks out both, and then **fails if anything skipped at all**. That second half is what keeps
+the skip a local convenience rather than a hole: a run that quietly omitted the tests holding the
+grammar to the language would otherwise be indistinguishable from a run that passed them.
 
 ## Running the tests
 

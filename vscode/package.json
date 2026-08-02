@@ -2,7 +2,7 @@
   "name": "profi-c",
   "displayName": "Profi-C",
   "description": "Syntax highlighting and debugging for Profi-C.",
-  "version": "1.4.0",
+  "version": "1.7.0",
   "publisher": "profi-c",
   "license": "MIT",
   "engines": { "vscode": "^1.75.0" },
@@ -87,10 +87,22 @@
       }
     ],
     "menus": {
+      "editor/title/run": [
+        {
+          "command": "profi-c.runFile",
+          "group": "navigation@1",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.runProject",
+          "group": "navigation@2",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        }
+      ],
       "editor/title": [
         {
           "submenu": "profi-c.build",
-          "group": "navigation@1",
+          "group": "navigation@-0.5",
           "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
         }
       ],
@@ -107,18 +119,6 @@
         {
           "command": "profi-c.chooseTarget",
           "group": "2_where@1"
-        }
-      ],
-      "editor/title/run": [
-        {
-          "command": "profi-c.runFile",
-          "when": "resourceLangId == profi-c",
-          "group": "navigation@1"
-        },
-        {
-          "command": "profi-c.runProject",
-          "when": "resourceLangId == profi-c",
-          "group": "navigation@2"
         }
       ],
       "commandPalette": [

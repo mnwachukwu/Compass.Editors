@@ -5,5 +5,8 @@ node_modules/
 bin/
 obj/
 
+# Where a test run writes its .trx, which CI reads to prove nothing skipped.
+TestResults/
+
 # Packaged extensions.
 *.vsix

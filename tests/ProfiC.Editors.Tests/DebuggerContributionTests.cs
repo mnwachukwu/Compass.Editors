@@ -297,33 +297,101 @@ public sealed class DebuggerContributionTests : EditorTestBase
     }
 
     /// <summary>
-    /// <para>The run buttons sit in the editor's title bar, where they do for every other
-    /// language.</para>
-    /// <para>Which is the difference between a language that feels supported and one that does
-    /// not: without this a reader has to know the Run and Debug panel exists, where C# and Java
-    /// put a button above the file they are already looking at.</para>
+    /// <para>Run is the editor's own button, and Build sorts immediately after it.</para>
+    /// <para>Both facts come from one thing worth writing down, since it is the only reason any
+    /// of these numbers make sense. VS Code's run button is not a fixed slot the editor reserves
+    /// — it contributes itself to <c>editor/title</c> as a split-button submenu in group
+    /// <c>navigation</c> at <b>order -1</b>. So it competes on exactly the terms everything else
+    /// does, and the whole title bar is one sorted list.</para>
+    /// <para>That is what earlier attempts were up against without knowing it. An order of 1 or
+    /// 100 put Build behind every extension that writes no order at all — and a missing order
+    /// sorts as zero, which is most of them. An order of -1 tied with the run button itself, and
+    /// a tie is broken by comparing titles, which is not a thing this can hold.</para>
+    /// <para>Anything strictly between -1 and 0 lands after Run and ahead of the unordered field.
+    /// Fractions are allowed: the order is read with JavaScript's <c>Number</c>, not parsed as an
+    /// integer.</para>
     /// </summary>
     [Test]
-    public void TheRunButtonsAreInTheEditorTitle()
+    public void RunIsTheEditorsOwnButtonAndBuildSortsRightAfterIt()
     {
-        JsonElement run = Contributes().GetProperty("menus").GetProperty("editor/title/run");
+        const double TheRunButton = -1;
+        const double WritingNoOrder = 0;
 
-        string[] shown = [.. run.EnumerateArray().Select(e => e.GetProperty("command").GetString()!)];
+        JsonElement menus = Contributes().GetProperty("menus");
+
+        JsonElement[] inTitle = [.. menus.GetProperty("editor/title").EnumerateArray()];
+
+        double order = double.Parse(
+            inTitle.Single().GetProperty("group").GetString()!.Split('@')[1],
+            System.Globalization.CultureInfo.InvariantCulture);
 
         Assert.Multiple(() =>
         {
-            Assert.That(shown, Does.Contain("profi-c.runFile"));
-            Assert.That(shown, Does.Contain("profi-c.runProject"));
+            Assert.That(
+                inTitle.Single().GetProperty("submenu").GetString(),
+                Is.EqualTo("profi-c.build"),
+                "Build is the only button of our own; Run belongs to the editor");
 
-            foreach (JsonElement entry in run.EnumerateArray())
+            Assert.That(order, Is.GreaterThan(TheRunButton), "or Build would sit left of Run");
+
+            Assert.That(
+                order,
+                Is.LessThan(WritingNoOrder),
+                "or anything contributing an icon without an order would come between them");
+
+            Assert.That(
+                inTitle.Single().GetProperty("when").GetString(),
+                Does.Contain("profi-c"),
+                "a button on every file of every language would be somebody else's bug");
+        });
+    }
+
+    /// <summary>
+    /// <para>The run button offers both ways to run, and only where they mean something.</para>
+    /// <para><c>editor/title/run</c> is shared: it is the one list behind every language's play
+    /// button. An entry there without a <c>when</c> is not a Profi-C button — it is a line reading
+    /// "Run project associated with this file" hanging off the run button of every Python and C#
+    /// file the reader opens.</para>
+    /// </summary>
+    [Test]
+    public void TheRunButtonOffersBothWaysToRunAndOnlyForProfiC()
+    {
+        JsonElement[] listed =
+        [
+            .. Contributes().GetProperty("menus")
+                            .GetProperty("editor/title/run")
+                            .EnumerateArray(),
+        ];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                listed.Select(e => e.GetProperty("command").GetString()),
+                Is.EqualTo(new[] { "profi-c.runFile", "profi-c.runProject" }));
+
+            foreach (JsonElement entry in listed)
             {
                 Assert.That(
-                    entry.GetProperty("when").GetString(),
-                    Does.Contain("profi-c"),
-                    "a button on every file of every language would be somebody else's bug");
+                    entry.TryGetProperty("when", out JsonElement when)
+                        && when.GetString()!.Contains("profi-c"),
+                    Is.True,
+                    $"{entry.GetProperty("command").GetString()} would show on every language");
             }
         });
     }
+
+    /// <summary>Build's list holds what it should, and nothing has lost its home.</summary>
+    [Test]
+    public void BuildHoldsItsOwnCommands() =>
+        Assert.That(
+            Contributes().GetProperty("menus")
+                         .GetProperty("profi-c.build")
+                         .EnumerateArray()
+                         .Select(e => e.GetProperty("command").GetString()),
+            Is.EqualTo(new[]
+            {
+                "profi-c.buildFile", "profi-c.buildProject", "profi-c.chooseTarget",
+            }));
 
     /// <summary>
     /// <para>The two ways to run are named as the editor names them elsewhere.</para>
@@ -721,11 +789,17 @@ public sealed class DebuggerContributionTests : EditorTestBase
     /// — silently, with the file on disk plainly saying otherwise — which is a whole evening
     /// lost to a debugger that is right in the repository and absent in the editor.</para>
     /// <para>This cannot check that the bump happened; nothing here knows what was there before.
-    /// What it can check is that the number is a real one and that the install instructions name
-    /// the same folder, since those go stale together.</para>
+    /// What it can check is that the number is a real one, and that the install instructions do
+    /// not repeat it.</para>
+    /// <para><b>The instructions used to name a versioned folder</b>, on the assumption that VS
+    /// Code needed one — the Marketplace lays extensions out as <c>publisher.name-version</c>,
+    /// and it is an easy thing to believe. It does not: the version is read from the manifest,
+    /// and a plain folder works. The old advice cost a re-link on every manifest change, and
+    /// left a version written in two places to drift. A version that appears nowhere in the
+    /// instructions cannot go stale in them.</para>
     /// </summary>
     [Test]
-    public void TheVersionIsRealAndTheInstructionsNameIt()
+    public void TheVersionIsRealAndTheInstructionsDoNotRepeatIt()
     {
         string version = Manifest().RootElement.GetProperty("version").GetString()!;
         string readme = File.ReadAllText(Path.Combine(Extension, "README.md"));
@@ -734,15 +808,10 @@ public sealed class DebuggerContributionTests : EditorTestBase
         {
             Assert.That(Version.TryParse(version, out _), Is.True, version);
 
-            Assert.That(readme, Does.Contain($"profi-c-{version}"),
-                        "the folder the README installs into carries the version");
-
             Assert.That(
-                Regex.Matches(readme, @"profi-c-(\d+\.\d+\.\d+)")
-                     .Select(found => found.Groups[1].Value)
-                     .Distinct(),
-                Is.EqualTo(new[] { version }),
-                "and names no other, or one of them is wrong");
+                Regex.Matches(readme, @"profi-c-(\d+\.\d+\.\d+)").Select(f => f.Groups[1].Value),
+                Is.Empty,
+                "the folder to install into carries no version, so nothing there can go stale");
         });
     }
 }

@@ -32,10 +32,20 @@ the repository. A change shows up on the next window reload and there is no copy
 
 ```powershell
 $repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0"
-if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c"
+if (Test-Path $dest) {
+    if ((Get-Item $dest -Force).LinkType) { cmd /c rmdir "$dest" }
+    else { cmd /c rmdir /s /q "$dest" }
+}
 New-Item -ItemType Junction -Path $dest -Target "$repo\vscode"
 ```
+
+**Why that is four lines rather than one.** The folder no longer changes name between versions,
+so this is a snippet you may well run again over something already there — and what is there
+decides how to remove it. A **link** must be removed as a link: `Remove-Item -Recurse -Force` has
+been known to follow a junction and delete what is on the other side of it, which here is the
+repository. A **folder of copied files** has to be removed with its contents, which a bare
+`rmdir` will not do. Asking `LinkType` tells the two apart, and each gets the removal it needs.
 
 A **symbolic link** does the same job and needs an elevated shell, or Developer Mode turned on:
 
@@ -53,7 +63,7 @@ elevation a symbolic link asks for buys nothing in this case.
 
 ```bash
 repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c-1.4.0
+dest=~/.vscode/extensions/profi-c
 rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 ```
 
@@ -62,10 +72,10 @@ rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 > delete what is on the other side of it, which here is the repository. Remove the link alone:
 >
 > ```powershell
-> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0" -Force).Delete()
+> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c" -Force).Delete()
 > ```
 >
-> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c-1.4.0"` with no `/s`. On macOS and
+> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c"` with no `/s`. On macOS and
 > Linux, `rm` on the link removes the link.
 
 ### Copying it — for anyone who only wants to read Profi-C
@@ -76,8 +86,11 @@ Change the first line to wherever you cloned the repository, then run the rest a
 
 ```powershell
 $repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0"
-Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c"
+if (Test-Path $dest) {
+    if ((Get-Item $dest -Force).LinkType) { cmd /c rmdir "$dest" }
+    else { cmd /c rmdir /s /q "$dest" }
+}
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item "$repo\vscode\*" $dest -Recurse -Force
 ```
@@ -86,7 +99,7 @@ Copy-Item "$repo\vscode\*" $dest -Recurse -Force
 
 ```bash
 repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c-1.4.0
+dest=~/.vscode/extensions/profi-c
 rm -rf "$dest" && mkdir -p "$dest" && cp -R "$repo/vscode/." "$dest"
 ```
 
@@ -96,14 +109,17 @@ Reload the window — `Ctrl+Shift+P`, "Developer: Reload Window" — and open a 
 
 - **VS Code Insiders** uses `.vscode-insiders` rather than `.vscode`. Everything else is the
   same.
-- **The folder name carries the version**, and VS Code will keep serving an old copy if a new
-  one arrives under the same name. Bump it to match `package.json` when that changes.
-- **A grammar edit lands on the next reload. A `package.json` edit does not.** Grammar files
-  are read each time one is needed; everything under `contributes` is read once, at the scan,
-  and written to `~/.vscode/extensions/extensions.json` with the version beside it. Raise
-  `version` when you change what the manifest contributes, or the editor goes on serving what
-  it recorded — silently, with the file on disk plainly saying otherwise. Deleting that cache
-  and restarting forces a rescan if a bump ever fails to take.
+- **The folder needs no version in its name.** The Marketplace lays extensions out as
+  `publisher.name-version`, and it is easy to assume that is required — it is not. VS Code reads
+  the version from `package.json`, so a plain `profi-c` folder is enough, and a link made once
+  never has to be made again.
+- **A grammar edit lands on the next reload. A `package.json` edit needs a version bump.**
+  Grammar files are read each time one is needed; everything under `contributes` is read once,
+  at the scan, and recorded in `~/.vscode/extensions/extensions.json` with the version beside
+  it. Raise `version` when you change what the manifest contributes, or the editor goes on
+  serving what it recorded — silently, with the file on disk plainly saying otherwise. The
+  number is what forces the rescan; where the folder sits has nothing to do with it. Deleting
+  that cache and restarting forces one if a bump ever fails to take.
 
 **How a stale copy shows itself.** The editor colors by whatever rules it has, so a construct
 the copy has never heard of is colored by the rules for something else, and the symptom looks
@@ -116,7 +132,7 @@ Nothing is wrong with the grammar in either case; the editor is reading an old o
 hunting for a bug, check the installed copy holds the rule you expect:
 
 ```powershell
-Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0\syntaxes\profi-c.tmLanguage.json"
+Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c\syntaxes\profi-c.tmLanguage.json"
 ```
 
 A link cannot go stale, which is the whole argument for one.
@@ -149,10 +165,10 @@ way to debug one project against a build of the compiler without changing anythi
 
 ### The buttons above the file
 
-Open a `.pc` file and two buttons appear in the editor's title bar, where C# and Java put
-theirs. Each is an icon with a list behind it:
+Open a `.pc` file and two buttons appear side by side at the left of the editor's title bar.
 
-**▶ Run** —
+**▶ Run** is the editor's own play button — the same one a C# or Python file gets. **One click
+runs**, and the chevron beside it lists the two ways:
 
 | | |
 |---|---|
@@ -160,15 +176,28 @@ theirs. Each is an icon with a list behind it:
 | **Run project associated with this file** | Finds the `.pcp` that lists the open file and runs that instead |
 
 Both debug. There is one adapter and it always stops where breakpoints are set — what differs is
-only what gets compiled.
+only what gets compiled. Whichever you pick last becomes what a single click does next time.
 
-**🔨 Build** —
+**🔨 Build** sits immediately to its right:
 
 | | |
 |---|---|
 | **Build this file** | Writes an assembly for the open file |
 | **Build project associated with this file** | Writes an assembly for the project that lists it |
 | **Choose the target platform** | Which platform every build aims at |
+
+**Why Build's order is `-0.5`**, which looks like a typo and is not. The run button is not a slot
+the editor reserves: it contributes *itself* to `editor/title` as a split button in group
+`navigation` at **order −1**. The whole title bar is one sorted list — group first, `navigation`
+ahead of every other, then the number after the `@` — and the run button is simply an early
+entry in it.
+
+Two things follow, and between them they rule out every ordinary number. **An entry that writes
+no order sorts as zero**, and most title-bar icons write none, so `1` or `100` puts Build behind
+whatever else the reader has installed. And `-1` is a *tie* with the run button, which VS Code
+breaks by comparing titles — nothing a manifest can hold. What is left is the gap: anything
+strictly between −1 and 0 lands after Run and ahead of the unordered field. The order is read
+with JavaScript's `Number`, so a fraction is as valid as an integer.
 
 ### Which project is "associated"
 
@@ -177,9 +206,14 @@ it builds, and a file it does not list is no more part of it than one in another
 the nearest project regardless would compile a program you are not looking at, print its output,
 and look exactly like the button working.
 
-So the search reads each project the way the compiler does — a `source` naming a file, a `source`
-naming a folder, a `reference` to another project — and keeps going upward until one claims the
-file. Where none does, the file itself is used and you are told which happened:
+**The compiler answers it**, with `pc project`. Not "reads projects the way the compiler does" —
+it is the same reader, which matters more than it sounds. A `.pcp` is read for a `source` naming
+a file, a `source` naming a folder, and a `reference` to another project, but also for the two
+comment forms and for `end project`; scanning the file for the word `source` gets a commented-out
+one wrong, and gets it wrong in the direction that runs a program you were not looking at.
+
+The search goes upward until a project claims the file. Where none does, the file itself is used
+and you are told which happened:
 
 - *no project found — running this file*
 - *no project lists this file — running the file itself*

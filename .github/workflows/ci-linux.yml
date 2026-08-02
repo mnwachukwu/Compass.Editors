@@ -1,0 +1,17 @@
+name: CI (Linux)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build and test
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ubuntu-latest
+    # For PROFI_C_TOKEN, which the checkout of Profi-C falls back from where it is unset.
+    secrets: inherit

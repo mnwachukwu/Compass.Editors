@@ -532,150 +532,56 @@ function withTheProjectInstead(configuration) {
         return { ...configuration, program: found.project };
     }
 
-    vscode.window.showInformationMessage(
-        found.searched === 0
-            ? 'Profi-C: no project found — running this file.'
-            : 'Profi-C: no project lists this file — running the file itself.');
+    // Nothing is known about projects when the compiler could not be asked, so there is nothing
+    // true to say. Silent on purpose: the run or build about to happen reports a compiler it
+    // cannot start, and two notices about one missing program is one too many.
+    if (found.asked) {
+        vscode.window.showInformationMessage(
+            found.searched === 0
+                ? 'Profi-C: no project found — running this file.'
+                : 'Profi-C: no project lists this file — running the file itself.');
+    }
 
     return configuration;
 }
 
 /**
- * The nearest project that lists the file, and how many were looked at on the way.
+ * The nearest project that lists the file, and how many were read on the way.
  *
- * The count is what tells "there is no project here" from "there are projects and none of them
- * wants this file", which are different things to be told.
+ * Asked of the compiler, because the answer depends on how a `.pcp` is read and reading one here
+ * would be a second reader of that format. The two would agree until the day they did not, and
+ * that disagreement is silent in the worst direction: a project claims a file it does not build,
+ * and pressing Run compiles a program nobody was looking at.
+ *
+ * The count separates "there is no project here" from "there are projects and none of them wants
+ * this file", which are different things to be told. `asked` separates both from not knowing.
  */
 function projectClaiming(program) {
     if (typeof program !== 'string' || program.length === 0) {
-        return { project: undefined, searched: 0 };
+        return { project: undefined, searched: 0, asked: false };
     }
 
-    const path = require('path');
+    const asked = require('child_process').spawnSync(compiler(), ['project', program], {
+        encoding: 'utf8',
+        timeout: 15000,
+        windowsHide: true,
+    });
 
-    let searched = 0;
-    let folder = path.dirname(path.resolve(program));
-
-    // Upwards until something claims it or the disk runs out. Past the workspace rather than
-    // stopping at it, because a project may sit above the folder that was opened.
-    for (let previous = ''; folder !== previous; previous = folder, folder = path.dirname(folder)) {
-        for (const project of projectsIn(folder)) {
-            searched++;
-
-            if (claims(project, path.resolve(program))) {
-                return { project, searched };
-            }
-        }
-    }
-
-    return { project: undefined, searched };
-}
-
-function projectsIn(folder) {
-    const fs = require('fs');
-    const path = require('path');
-
-    try {
-        return fs.readdirSync(folder)
-                 .filter(name => name.endsWith('.pcp'))
-                 .sort()
-                 .map(name => path.join(folder, name));
-    } catch {
-        // A folder that cannot be read is one with no projects in it as far as this is
-        // concerned. Walking up from a file reaches directories nobody can list.
-        return [];
-    }
-}
-
-/**
- * Whether a project builds a file, following what it references.
- *
- * Reads the project the way the compiler does: `source` names a file or a folder — a folder
- * being every `.pc` directly inside it, not the tree below — and `reference` names another
- * project whose sources are built into this one. A file reached either way is part of the
- * build, which is what makes running the project the right answer for it.
- */
-function claims(project, file, seen = new Set()) {
-    const fs = require('fs');
-    const path = require('path');
-
-    const full = path.resolve(project);
-
-    if (seen.has(full)) {
-        // Projects may reference each other in a circle. The compiler reports that; this only
-        // has to avoid following it forever.
-        return false;
-    }
-
-    seen.add(full);
-
-    let text;
-
-    try {
-        text = fs.readFileSync(full, 'utf8');
-    } catch {
-        return false;
-    }
-
-    const folder = path.dirname(full);
-
-    for (const line of text.split(/\r?\n/)) {
-        const entry = line.trim();
-        const separator = entry.indexOf(' ');
-
-        if (separator < 0) {
-            continue;
-        }
-
-        const word = entry.slice(0, separator);
-        const rest = entry.slice(separator + 1).trim();
-
-        if (rest.length === 0) {
-            continue;
-        }
-
-        const named = path.resolve(folder, rest.replace(/\//g, path.sep));
-
-        if (word === 'source' && lists(named, file)) {
-            return true;
-        }
-
-        if (word === 'reference' && claims(named, file, seen)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/** Whether a written source — a file, or a folder of them — covers the file being run. */
-function lists(named, file) {
-    const fs = require('fs');
-    const path = require('path');
-
-    if (samePath(named, file)) {
-        return true;
+    if (asked.error || asked.status !== 0) {
+        return { project: undefined, searched: 0, asked: false };
     }
 
     try {
-        // A folder takes the .pc files directly inside it and not the tree below, so a file in
-        // a subfolder is not covered by naming the folder above it.
-        return fs.statSync(named).isDirectory()
-            && samePath(path.dirname(file), named)
-            && file.endsWith('.pc');
-    } catch {
-        return false;
-    }
-}
+        const answer = JSON.parse(asked.stdout);
 
-/**
- * Whether two paths name one file. Case is ignored where the file system ignores it, so that a
- * project listing `Program.pc` claims the file an editor opened as `program.pc`.
- */
-function samePath(one, other) {
-    return process.platform === 'win32' || process.platform === 'darwin'
-        ? one.toLowerCase() === other.toLowerCase()
-        : one === other;
+        return {
+            project: answer.project || undefined,
+            searched: answer.searched,
+            asked: true,
+        };
+    } catch {
+        return { project: undefined, searched: 0, asked: false };
+    }
 }
 
 /**

@@ -1,0 +1,98 @@
+# The steps a CI run takes, held in one place.
+#
+# Windows and Linux each call this from a workflow file of their own, because a badge names a
+# workflow file and nothing smaller. One file per operating system is what makes "Linux is
+# broken, Windows is fine" readable from the README rather than only from the Actions tab.
+
+name: Build and test
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: The runner to build and test on.
+        required: true
+        type: string
+
+jobs:
+  build:
+    runs-on: ${{ inputs.os }}
+
+    steps:
+      # Both repositories, side by side, because that is the layout the tests look for. The
+      # vocabulary the grammars are held to is a fact about the language, so Profi-C publishes
+      # it and this reads it from a sibling checkout rather than keeping a copy that could drift.
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          path: Profi-C.Editors
+
+      - name: Check out Profi-C
+        uses: actions/checkout@v4
+        with:
+          repository: mnwachukwu/Profi-C
+          path: Profi-C
+          # The token a job is given by default reaches the repository it was started from and
+          # no other. Where Profi-C is private, add a PROFI_C_TOKEN secret that can read it.
+          token: ${{ secrets.PROFI_C_TOKEN || github.token }}
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Part of what the extension does is asked of the compiler rather than decided in
+      # JavaScript — which project claims a file, what a file declares — so the tests holding it
+      # to that need one to ask. They skip without it, and this job has no business skipping.
+      - name: Publish the Profi-C compiler
+        working-directory: Profi-C
+        run: dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist
+
+      # The TextMate engine VS Code itself tokenizes with, fetched rather than committed. The
+      # tests that put a .pc file through it skip until this has run.
+      - name: Install the TextMate engine
+        working-directory: Profi-C.Editors
+        run: npm install --prefix vscode
+
+      - name: Restore
+        working-directory: Profi-C.Editors
+        run: dotnet restore
+
+      - name: Build
+        working-directory: Profi-C.Editors
+        run: dotnet build --no-restore --configuration Release -warnaserror
+
+      - name: Test
+        working-directory: Profi-C.Editors
+        run: >
+          dotnet test --no-build --configuration Release --verbosity normal
+          --logger "trx;LogFileName=results.trx" --results-directory TestResults
+
+      # Every test here that needs something fetched rather than committed skips without it —
+      # the TextMate engine, and Profi-C beside this. Skipping is right on a machine holding one
+      # repository and wrong here, because this job installs all of it. So a skip in CI means
+      # something did not arrive and the test proved nothing, which is the hole the skip was
+      # supposed to be a convenience about. Fail instead of reporting green.
+      - name: Nothing skipped
+        shell: pwsh
+        working-directory: Profi-C.Editors
+        run: |
+          $results = Get-ChildItem TestResults -Filter *.trx -Recurse
+          if (-not $results) { throw "No test results were written; the test step ran nothing." }
+
+          $skipped = 0
+          foreach ($file in $results) {
+              $counters = ([xml](Get-Content $file.FullName -Raw)).TestRun.ResultSummary.Counters
+              $skipped += [int]$counters.notExecuted
+          }
+
+          if ($skipped -gt 0) {
+              throw "$skipped test(s) skipped. CI installs everything they ask for, so a skip here hides a hole."
+          }
+
+          Write-Host "Nothing skipped."

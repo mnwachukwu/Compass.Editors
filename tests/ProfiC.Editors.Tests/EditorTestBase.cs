@@ -89,6 +89,33 @@ public abstract class EditorTestBase
         throw new InvalidOperationException("unreachable: Assert.Ignore throws");
     }
 
+    /// <summary>
+    /// <para>A built <c>pc</c> to ask, or an ignored test.</para>
+    /// <para>Some of what the extension does is not a decision of its own — which project claims
+    /// a file is the compiler's answer, asked for rather than worked out here. Testing that the
+    /// extension asks correctly therefore needs something to ask.</para>
+    /// <para>Taken from the sibling checkout's <c>dist</c>, which is where publishing puts it and
+    /// where a local install points, rather than from PATH: a test should hold the build beside
+    /// it, not whichever compiler a machine happens to have installed. CI publishes it.</para>
+    /// </summary>
+    protected static string CompilerOrIgnore()
+    {
+        string profiC = ProfiCOrIgnore(
+            "check out Profi-C beside this repository for a compiler to ask");
+
+        string published = Path.Combine(
+            profiC, "dist", OperatingSystem.IsWindows() ? "pc.exe" : "pc");
+
+        if (!File.Exists(published))
+        {
+            Assert.Ignore(
+                $"{published} is missing; run "
+                + "'dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist' there");
+        }
+
+        return published;
+    }
+
     /// <summary>Every word the language reserves and every type it provides.</summary>
     protected sealed record Published(string[] ReservedWords, string[] TypeNames);
 
