@@ -263,6 +263,457 @@ public sealed class DebuggerContributionTests : EditorTestBase
         });
     }
 
+    // ---- Running without writing a launch.json ----------------------------------------------
+
+    /// <summary>
+    /// <para>Every command the manifest offers is one the script registers.</para>
+    /// <para>An unregistered command is offered in the palette and in the editor's title bar,
+    /// and reports "command not found" when it is used. Nothing checks this but this.</para>
+    /// </summary>
+    [Test]
+    public void EveryOfferedCommandIsRegistered()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        string[] offered =
+        [
+            .. Contributes().GetProperty("commands")
+                            .EnumerateArray()
+                            .Select(command => command.GetProperty("command").GetString()!),
+        ];
+
+        Assert.That(offered, Is.Not.Empty);
+
+        Assert.Multiple(() =>
+        {
+            foreach (string command in offered)
+            {
+                Assert.That(
+                    script,
+                    Does.Contain($"registerCommand('{command}'"),
+                    $"'{command}' is offered but never registered");
+            }
+        });
+    }
+
+    /// <summary>
+    /// <para>The run buttons sit in the editor's title bar, where they do for every other
+    /// language.</para>
+    /// <para>Which is the difference between a language that feels supported and one that does
+    /// not: without this a reader has to know the Run and Debug panel exists, where C# and Java
+    /// put a button above the file they are already looking at.</para>
+    /// </summary>
+    [Test]
+    public void TheRunButtonsAreInTheEditorTitle()
+    {
+        JsonElement run = Contributes().GetProperty("menus").GetProperty("editor/title/run");
+
+        string[] shown = [.. run.EnumerateArray().Select(e => e.GetProperty("command").GetString()!)];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(shown, Does.Contain("profi-c.runFile"));
+            Assert.That(shown, Does.Contain("profi-c.runProject"));
+
+            foreach (JsonElement entry in run.EnumerateArray())
+            {
+                Assert.That(
+                    entry.GetProperty("when").GetString(),
+                    Does.Contain("profi-c"),
+                    "a button on every file of every language would be somebody else's bug");
+            }
+        });
+    }
+
+    /// <summary>
+    /// <para>The two ways to run are named as the editor names them elsewhere.</para>
+    /// <para>Worth pinning rather than left to taste: a reader arriving from C# reads the same
+    /// words for the same act, and the earlier names were invented here and read like nothing
+    /// else in the editor.</para>
+    /// </summary>
+    [Test]
+    public void TheCommandsAreNamedAsTheEditorNamesThem()
+    {
+        Dictionary<string, string> titles = Contributes()
+            .GetProperty("commands")
+            .EnumerateArray()
+            .ToDictionary(
+                c => c.GetProperty("command").GetString()!,
+                c => c.GetProperty("title").GetString()!);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(titles["profi-c.runFile"], Is.EqualTo("Run this file"));
+
+            Assert.That(
+                titles["profi-c.runProject"],
+                Is.EqualTo("Run project associated with this file"));
+        });
+    }
+
+    /// <summary>
+    /// <para>The extension offers its configurations rather than waiting to be given one.</para>
+    /// <para>A dynamic provider is what puts entries in the Run and Debug list when no
+    /// launch.json exists anywhere. Without it the only configurations a reader ever sees are
+    /// ones somebody wrote into a folder by hand, which is one file per project forever.</para>
+    /// </summary>
+    [Test]
+    public void ConfigurationsAreOfferedWithoutALaunchJson()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(script, Does.Contain("provideDebugConfigurations"));
+
+            Assert.That(
+                script,
+                Does.Contain("DebugConfigurationProviderTriggerKind.Dynamic"),
+                "a provider registered without this only answers when a launch.json is written");
+
+            Assert.That(
+                Manifest().RootElement.GetProperty("activationEvents")
+                          .EnumerateArray()
+                          .Select(e => e.GetString()),
+                Does.Contain("onDebugDynamicConfigurations:profi-c"));
+        });
+    }
+
+    // ---- Building ---------------------------------------------------------------------------
+
+    /// <summary>
+    /// <para>Build is its own button in the editor title, with its own list.</para>
+    /// <para>A submenu rather than more entries under Run, because building and running are
+    /// different acts — and because entries added to <c>editor/title/run</c> do not become
+    /// buttons, they join the one the play icon already has.</para>
+    /// </summary>
+    [Test]
+    public void BuildIsItsOwnButtonWithItsOwnList()
+    {
+        JsonElement contributes = Contributes();
+
+        string[] inTitle =
+        [
+            .. contributes.GetProperty("menus").GetProperty("editor/title")
+                          .EnumerateArray()
+                          .Select(e => e.GetProperty("submenu").GetString()!),
+        ];
+
+        string[] inList =
+        [
+            .. contributes.GetProperty("menus").GetProperty("profi-c.build")
+                          .EnumerateArray()
+                          .Select(e => e.GetProperty("command").GetString()!),
+        ];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(inTitle, Does.Contain("profi-c.build"));
+
+            Assert.That(
+                contributes.GetProperty("submenus").EnumerateArray()
+                           .Select(s => s.GetProperty("id").GetString()),
+                Does.Contain("profi-c.build"),
+                "a menu placed in the title must be declared as a submenu to become a button");
+
+            Assert.That(inList, Is.EqualTo(new[]
+            {
+                "profi-c.buildFile", "profi-c.buildProject", "profi-c.chooseTarget",
+            }));
+        });
+    }
+
+    /// <summary>
+    /// <para>Choosing what to build and choosing where to build for are separate sections.</para>
+    /// <para>Menu groups are what draw the line between them: entries sharing a group sit
+    /// together, and a change of group renders a separator. Putting all three in one group would
+    /// read as three equal choices, when the third is a setting the first two obey.</para>
+    /// </summary>
+    [Test]
+    public void WhatToBuildAndWhereToBuildForAreSeparateSections()
+    {
+        Dictionary<string, string> groups = Contributes()
+            .GetProperty("menus")
+            .GetProperty("profi-c.build")
+            .EnumerateArray()
+            .ToDictionary(
+                e => e.GetProperty("command").GetString()!,
+                e => e.GetProperty("group").GetString()!.Split('@')[0]);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(groups["profi-c.buildFile"], Is.EqualTo(groups["profi-c.buildProject"]));
+
+            Assert.That(
+                groups["profi-c.chooseTarget"],
+                Is.Not.EqualTo(groups["profi-c.buildFile"]),
+                "a separator is a change of group, and there is nothing else that draws one");
+        });
+    }
+
+    /// <summary>
+    /// <para>Three problem matchers, one per severity the compiler writes.</para>
+    /// <para>VS Code's severities are error, warning and info. Profi-C's third is
+    /// <c>opinion</c>, which VS Code has never heard of — so a single matcher capturing the word
+    /// would fall back to its default for every one of them, painting the Problems panel red
+    /// with the one severity that means "this compiles fine, but". Each severity gets a matcher
+    /// anchored on its own word instead.</para>
+    /// </summary>
+    [Test]
+    public void EachSeverityHasItsOwnMatcher()
+    {
+        Dictionary<string, string> matchers = Contributes()
+            .GetProperty("problemMatchers")
+            .EnumerateArray()
+            .ToDictionary(
+                m => m.GetProperty("name").GetString()!,
+                m => m.GetProperty("severity").GetString()!);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(matchers["profi-c-error"], Is.EqualTo("error"));
+            Assert.That(matchers["profi-c-warning"], Is.EqualTo("warning"));
+
+            Assert.That(matchers["profi-c-opinion"], Is.EqualTo("info"),
+                        "an opinion is not a problem, and must not be shown as one");
+        });
+    }
+
+    /// <summary>
+    /// <para>Each matcher reads what the compiler actually writes.</para>
+    /// <para>Checked against the real form rather than against the regex's intent, because a
+    /// matcher that matches nothing is silent: the build runs, the terminal fills with
+    /// diagnostics, and the Problems panel stays empty as though everything were fine.</para>
+    /// </summary>
+    [TestCase("error", @"samples\bank.pc(19,1): error PC0501: The model 'Book' cannot be emitted yet.")]
+    [TestCase("warning", @"D:\x\warn.pc(4,9): warning PC0403: This can never be reached.")]
+    [TestCase("info", @"/home/matt/noisy.pc(5,9): opinion PC0406: This loop has no condition.")]
+    public void AMatcherReadsWhatTheCompilerWrites(string severity, string line)
+    {
+        JsonElement matcher = Contributes()
+            .GetProperty("problemMatchers")
+            .EnumerateArray()
+            .Single(m => m.GetProperty("severity").GetString() == severity);
+
+        JsonElement pattern = matcher.GetProperty("pattern");
+
+        Match read = Regex.Match(line, pattern.GetProperty("regexp").GetString()!);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(read.Success, Is.True, line);
+            Assert.That(read.Groups[pattern.GetProperty("line").GetInt32()].Value, Is.Not.Empty);
+            Assert.That(read.Groups[pattern.GetProperty("column").GetInt32()].Value, Is.Not.Empty);
+
+            Assert.That(
+                read.Groups[pattern.GetProperty("code").GetInt32()].Value,
+                Does.StartWith("PC"),
+                "the code is what a reader searches the diagnostics appendix for");
+        });
+    }
+
+    /// <summary>
+    /// A matcher only reads its own severity, or every diagnostic would be reported three times
+    /// at three different severities.
+    /// </summary>
+    [Test]
+    public void AMatcherReadsOnlyItsOwnSeverity()
+    {
+        string[] lines =
+        [
+            "a.pc(1,1): error PC0501: no.",
+            "a.pc(1,1): warning PC0403: no.",
+            "a.pc(1,1): opinion PC0406: no.",
+        ];
+
+        Assert.Multiple(() =>
+        {
+            foreach (JsonElement matcher in Contributes().GetProperty("problemMatchers").EnumerateArray())
+            {
+                string regex = matcher.GetProperty("pattern").GetProperty("regexp").GetString()!;
+
+                Assert.That(
+                    lines.Count(line => Regex.IsMatch(line, regex)),
+                    Is.EqualTo(1),
+                    $"{matcher.GetProperty("name").GetString()} should read one severity only");
+            }
+        });
+    }
+
+    /// <summary>
+    /// <para>A build is a task, and the task type is one the script provides.</para>
+    /// <para>A task rather than a process of the extension's own, so that output lands in a
+    /// terminal, the matchers get a chance at it, and Ctrl+Shift+B finds a build without anybody
+    /// writing a command line.</para>
+    /// </summary>
+    [Test]
+    public void ABuildIsATaskTheScriptProvides()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        string[] types =
+        [
+            .. Contributes().GetProperty("taskDefinitions")
+                            .EnumerateArray()
+                            .Select(t => t.GetProperty("type").GetString()!),
+        ];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(types, Does.Contain(Declared("DebuggerType")));
+            Assert.That(script, Does.Contain("registerTaskProvider"));
+            Assert.That(script, Does.Contain("TaskGroup.Build"), "so Ctrl+Shift+B finds it");
+
+            Assert.That(
+                script,
+                Does.Contain("$profi-c-error"),
+                "the task has to name the matchers, or nothing reads its output");
+        });
+    }
+
+    /// <summary>
+    /// <para>The platforms offered are the ones the compiler says are installed.</para>
+    /// <para>Asked rather than listed, because which are available depends on the machine —
+    /// a menu written in the manifest cannot know, and offering one that cannot be built for
+    /// would undo the refusal that exists to catch exactly that.</para>
+    /// </summary>
+    [Test]
+    public void TheTargetIsChosenFromWhatTheCompilerReports()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(script, Does.Contain("'platforms'"),
+                        "the list comes from the compiler, not from a copy kept here");
+
+            Assert.That(script, Does.Contain("showQuickPick"));
+
+            Assert.That(
+                Contributes().GetProperty("configuration").GetProperty("properties")
+                             .EnumerateObject().Select(p => p.Name),
+                Does.Contain(Declared("TargetSetting")),
+                "and the choice is kept in a setting the manifest declares");
+        });
+    }
+
+    /// <summary>
+    /// <para>A compiler too old to debug with is reported rather than tried.</para>
+    /// <para>The failure this exists for gives a reader nothing at all. An older <c>pc</c> meets
+    /// <c>debug</c>, prints "unknown command" to its standard output, and exits zero — so the
+    /// editor sees a process that started correctly and then finished, and pressing Run does
+    /// nothing, says nothing, and writes nothing to a log. It cost an evening once.</para>
+    /// <para>Checked in the script rather than by running it, since the behavior needs a
+    /// compiler of the wrong vintage to demonstrate. What is held here is that the check exists
+    /// and that its answer reaches the reader.</para>
+    /// </summary>
+    [Test]
+    public void ACompilerThatCannotDebugIsReported()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(script, Does.Contain("whyItCannotDebug"));
+
+            Assert.That(
+                script,
+                Does.Contain("showErrorMessage"),
+                "the answer has to reach the reader, or it is the same silence as before");
+
+            Assert.That(
+                script,
+                Does.Contain("too old to debug"),
+                "and say which of the two went wrong");
+        });
+    }
+
+    /// <summary>
+    /// <para>Breadcrumbs and the Outline come from the compiler, not from a parser kept here.
+    /// </para>
+    /// <para>A symbol provider is all the editor needs — no language server — but where the
+    /// symbols come from is the decision that matters. Reading the file in JavaScript would put
+    /// a second definition of Profi-C in this repository, and the two would agree until a
+    /// construct was added to one of them: an outline that silently stops listing something,
+    /// with nothing failing anywhere.</para>
+    /// </summary>
+    [Test]
+    public void TheOutlineComesFromTheCompiler()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(script, Does.Contain("registerDocumentSymbolProvider"));
+
+            Assert.That(
+                script,
+                Does.Contain("'outline'"),
+                "the tree is asked for, not worked out here");
+
+            Assert.That(
+                script,
+                Does.Contain("entry.line - 1"),
+                "and converted from the compiler's one-based positions at this boundary");
+        });
+    }
+
+    /// <summary>
+    /// <para>Every kind the compiler can report has an icon.</para>
+    /// <para>The two lists are written in different repositories and nothing but this compares
+    /// them. A kind the editor does not know falls to the default, so a structure would quietly
+    /// show as a method — right shape, wrong picture, and no error anywhere.</para>
+    /// </summary>
+    [Test]
+    public void EveryKindTheCompilerReportsHasAnIcon()
+    {
+        string script = File.ReadAllText(ScriptPath);
+
+        string[] kinds =
+        [
+            "namespace", "model", "structure", "enumeration",
+            "enumMember", "constructor", "field",
+        ];
+
+        Assert.Multiple(() =>
+        {
+            foreach (string kind in kinds)
+            {
+                Assert.That(
+                    script,
+                    Does.Contain($"case '{kind}':"),
+                    $"'{kind}' is a kind the compiler writes and this does not draw");
+            }
+        });
+    }
+
+    /// <summary>
+    /// <para>The colors travel with the extension.</para>
+    /// <para>A palette in a workspace's settings colors one folder, which means copying a file
+    /// into every project — the thing this command exists to replace. It writes to the reader's
+    /// own settings because VS Code will not let an extension impose token colors: those offered
+    /// through <c>configurationDefaults</c> are accepted into the manifest and then ignored.
+    /// </para>
+    /// </summary>
+    [Test]
+    public void ThePaletteShipsWithTheExtension()
+    {
+        string palette = Path.Combine(Extension, "palette.js");
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(File.Exists(palette), Is.True, palette);
+
+            Assert.That(script, Does.Contain("require('./palette')"));
+
+            Assert.That(
+                script,
+                Does.Contain("ConfigurationTarget.Global"),
+                "written to the reader's own settings, or it colors one folder again");
+        });
+    }
+
     /// <summary>
     /// <para>The version was raised alongside what the manifest contributes.</para>
     /// <para>VS Code reads <c>contributes</c> once, at the scan, and records it with the version

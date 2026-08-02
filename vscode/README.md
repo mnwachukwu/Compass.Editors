@@ -5,8 +5,11 @@ with knowing the language — bracket matching, `Ctrl+/` inserting `#`, auto-clo
 indentation that follows `end` — and **a debugger**: breakpoints, stepping, a call stack, and a
 variables pane.
 
-There are still no diagnostics, no completion, and no hover. Those need a language server, which
-is a later piece of work.
+The breadcrumbs, the Outline view and `Ctrl+Shift+O` all show what a file declares.
+
+There are still no diagnostics as you type, no completion, and no hover. Those need a language
+server, which is a later piece of work — an outline does not, because it is one question about
+one file rather than a running analysis of all of them.
 
 ## Installing it
 
@@ -29,7 +32,7 @@ the repository. A change shows up on the next window reload and there is no copy
 
 ```powershell
 $repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0"
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0"
 if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
 New-Item -ItemType Junction -Path $dest -Target "$repo\vscode"
 ```
@@ -50,7 +53,7 @@ elevation a symbolic link asks for buys nothing in this case.
 
 ```bash
 repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c-1.1.0
+dest=~/.vscode/extensions/profi-c-1.4.0
 rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 ```
 
@@ -59,10 +62,10 @@ rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 > delete what is on the other side of it, which here is the repository. Remove the link alone:
 >
 > ```powershell
-> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0" -Force).Delete()
+> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0" -Force).Delete()
 > ```
 >
-> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c-1.1.0"` with no `/s`. On macOS and
+> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c-1.4.0"` with no `/s`. On macOS and
 > Linux, `rm` on the link removes the link.
 
 ### Copying it — for anyone who only wants to read Profi-C
@@ -73,7 +76,7 @@ Change the first line to wherever you cloned the repository, then run the rest a
 
 ```powershell
 $repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0"
+$dest = "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0"
 Remove-Item -Recurse -Force $dest -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $dest | Out-Null
 Copy-Item "$repo\vscode\*" $dest -Recurse -Force
@@ -83,7 +86,7 @@ Copy-Item "$repo\vscode\*" $dest -Recurse -Force
 
 ```bash
 repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c-1.1.0
+dest=~/.vscode/extensions/profi-c-1.4.0
 rm -rf "$dest" && mkdir -p "$dest" && cp -R "$repo/vscode/." "$dest"
 ```
 
@@ -113,7 +116,7 @@ Nothing is wrong with the grammar in either case; the editor is reading an old o
 hunting for a bug, check the installed copy holds the rule you expect:
 
 ```powershell
-Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c-1.1.0\syntaxes\profi-c.tmLanguage.json"
+Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c-1.4.0\syntaxes\profi-c.tmLanguage.json"
 ```
 
 A link cannot go stale, which is the whole argument for one.
@@ -144,11 +147,92 @@ repository — name it in your settings:
 A single configuration can override it too, with `compilerPath` beside `program`, which is the
 way to debug one project against a build of the compiler without changing anything globally.
 
+### The buttons above the file
+
+Open a `.pc` file and two buttons appear in the editor's title bar, where C# and Java put
+theirs. Each is an icon with a list behind it:
+
+**▶ Run** —
+
+| | |
+|---|---|
+| **Run this file** | Compiles the open file with the shared code beside it, and runs it |
+| **Run project associated with this file** | Finds the `.pcp` that lists the open file and runs that instead |
+
+Both debug. There is one adapter and it always stops where breakpoints are set — what differs is
+only what gets compiled.
+
+**🔨 Build** —
+
+| | |
+|---|---|
+| **Build this file** | Writes an assembly for the open file |
+| **Build project associated with this file** | Writes an assembly for the project that lists it |
+| **Choose the target platform** | Which platform every build aims at |
+
+### Which project is "associated"
+
+**The one that lists the file, not the one nearest it.** A `.pcp` sitting above a file says what
+it builds, and a file it does not list is no more part of it than one in another folder. Running
+the nearest project regardless would compile a program you are not looking at, print its output,
+and look exactly like the button working.
+
+So the search reads each project the way the compiler does — a `source` naming a file, a `source`
+naming a folder, a `reference` to another project — and keeps going upward until one claims the
+file. Where none does, the file itself is used and you are told which happened:
+
+- *no project found — running this file*
+- *no project lists this file — running the file itself*
+
+Two messages because they are two situations: one of you has no project, the other has one
+sitting right there that does not want this file, and only the second has something to go and
+look at.
+
+### Building
+
+The Build button compiles to a .NET assembly, into a `bin` beside the program, with a launcher
+you can run without naming `dotnet`. It runs as a **task**, so the output goes to a terminal and
+`Ctrl+Shift+B` finds it.
+
+**Diagnostics land in the Problems panel**, clickable to the line. The compiler writes them in
+the form every .NET tool already reads:
+
+```
+storefront/Program.pc(19,1): error PC0501: The model 'Book' cannot be compiled to an assembly yet.
+```
+
+Three severities are matched separately — `error` and `warning` as themselves, and **`opinion`
+as information**. VS Code knows only the first two words; the third is Profi-C's. A single
+matcher would file every opinion at its default severity, which would paint the panel red with
+the one severity that means *this compiles fine, but*.
+
+### Choosing what to build for
+
+**Choose the target platform** lists the platforms this machine can actually build for, with the
+current one marked, and the choice is remembered per workspace in `profi-c.targetPlatform`. It
+shows in the status bar so you can see what you are aiming at without opening anything.
+
+The list is asked of the compiler — `pc platforms` — rather than written into this extension,
+because what is available depends on which launchers the SDK installed and which any project has
+ever published for. A fixed list would offer platforms that cannot be built for, and finding that
+out is the compiler's job:
+
+```
+pc: nothing here can build for 'freebsd-x64'. Available: linux-x64, osx-x64,
+win-arm, win-arm64, win-x64, win-x86. 'dotnet publish -r freebsd-x64' on any
+project fetches what is needed.
+```
+
+**The emitter is unfinished**, so most programs are still refused with `PC0501` naming the
+construct. That is worth knowing before you press the button: the Problems panel is currently a
+good picture of what the back end has left to do.
+
 ### Without a launch.json
 
-`F5` on an open `.pc` file debugs that file. Nothing has to be configured, which is deliberate:
-asking a beginner to write a launch.json first is asking them to learn the editor before the
-language.
+**There is nothing to configure and no file to write.** The same two configurations appear in the
+Run and Debug list, and `F5` on an open `.pc` file runs it. That is deliberate: asking a beginner
+to write a launch.json first is asking them to learn the editor before the language — and asking
+anyone to copy one into every folder they keep Profi-C in is asking them to do it forever.
 
 ### With one
 
@@ -205,6 +289,28 @@ of these:
 4. **`extension.js` did not load.** Nothing says so in the editor; the debugger is simply absent
    from the menu. Output → Log (Extension Host) is where it is recorded.
 
+## The outline
+
+Breadcrumbs across the top, the Outline view in the sidebar, and `Ctrl+Shift+O` all draw from the
+same place: `pc outline`, which prints what a file declares as JSON.
+
+Asked of the compiler rather than read here, for the reason everything else in this repository is
+— a parser written in JavaScript would be a second definition of the language, and the two would
+agree until a construct was added to one of them. That failure is invisible: a member quietly
+stops appearing and nothing anywhere reports it.
+
+**It works on a file that does not compile**, which is when it matters. The outline is parsed and
+nothing more, and the parser recovers — so a half-written function still shows the ones around it.
+
+Two limits worth knowing:
+
+- **It reads the file on disk**, so unsaved edits are not reflected until you save. Passing the
+  buffer instead would mean writing a temporary file on every keystroke, and the thing that
+  avoids both is a language server.
+- **Clicking an entry goes to the start of the declaration**, not to its name, because the parser
+  records where a declaration begins and not where its name sits inside it. A point rather than a
+  guess.
+
 ## What it colors
 
 Reserved words, the primitive types, the types the language provides, literals of every form
@@ -248,9 +354,8 @@ nobody ever sees, which is why this extension no longer carries one.
 
 So every color on a Profi-C file comes from one of two places:
 
-1. **A `textMateRules` entry**, in your user or workspace settings. The Profi-C repository has
-   one in its `.vscode/settings.json`, which is what colors those files while working on the
-   language.
+1. **A `textMateRules` entry**, in your user or workspace settings — which is what
+   "Profi-C: Use the Profi-C colors" writes, and what you can edit afterwards.
 2. **Your theme**, for any scope no rule names.
 
 That second case is where the confusion lives. A theme knows nothing about `.profi-c` scopes,
@@ -300,15 +405,27 @@ documentation label inherits from `constant.language`, which several dark themes
 color as a keyword. **A palette written for the language does better**, because it can separate
 the things a reader of *this* language wants separated.
 
-That palette lives in `.vscode/settings.json` **at the root of the Profi-C repository**, not
-this one — it is what colors `.pc` files while the language is being worked on, and `.pc` files
-are over there. To use it in your own projects, copy its `editor.tokenColorCustomizations`
-block into your user `settings.json`. It applies as soon as it is saved — no reload, and
-nothing to install.
+**That palette ships with this extension.** Run it once:
 
-It is the only copy, deliberately: two palettes in two files drift, and the one in this README
-had already gone stale on three colors before it was removed. A shortened version, to show the
-shape:
+```
+Profi-C: Use the Profi-C colors
+```
+
+It writes the rules into your own `settings.json` — the user one, not a workspace one — so they
+apply in every folder you ever open a `.pc` file in. It applies as soon as it is written: no
+reload, nothing to copy, and nothing to repeat per project. Running it twice leaves one copy,
+and rules for other languages are left exactly as they were.
+
+**Why a command rather than something the extension simply does.** VS Code's model is that a
+theme owns colors and a grammar owns scopes. Token colors offered by an extension through
+`configurationDefaults` are accepted into the manifest and then ignored — there is no error and
+no warning, just a manifest naming colors nobody ever sees. Writing them where you would have
+written them by hand is the supported way, and it is yours to undo: they are ordinary rules in
+your settings, editable and deletable like any other.
+
+The palette lives in [`palette.js`](palette.js), which is the only copy — two palettes in two
+files drift, and the one in this README had already gone stale on three colors before a test was
+written to hold them together. A shortened version, to show the shape:
 
 ```jsonc
 "editor.tokenColorCustomizations": {
@@ -332,7 +449,7 @@ shape:
     { "scope": ["comment.block.profi-c", "comment.line.number-sign.profi-c"],
       "settings": { "foreground": "#4C9A5A" } }
 
-    // ... and the rest, in .vscode/settings.json
+    // ... and the rest, in palette.js
   ]
 }
 ```

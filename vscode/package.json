@@ -2,7 +2,7 @@
   "name": "profi-c",
   "displayName": "Profi-C",
   "description": "Syntax highlighting and debugging for Profi-C.",
-  "version": "1.1.0",
+  "version": "1.4.0",
   "publisher": "profi-c",
   "license": "MIT",
   "engines": { "vscode": "^1.75.0" },
@@ -12,7 +12,12 @@
     "vscode-textmate": "^9.1.0"
   },
   "categories": ["Programming Languages", "Debuggers"],
-  "activationEvents": ["onDebugResolve:profi-c"],
+  "activationEvents": [
+    "onDebugResolve:profi-c",
+    "onDebugDynamicConfigurations:profi-c",
+    "onLanguage:profi-c",
+    "onLanguage:profi-c-project"
+  ],
   "contributes": {
     "languages": [
       {
@@ -40,6 +45,93 @@
         "path": "./syntaxes/profi-c-project.tmLanguage.json"
       }
     ],
+    "commands": [
+      {
+        "command": "profi-c.runFile",
+        "title": "Run this file",
+        "category": "Profi-C",
+        "icon": "$(play)"
+      },
+      {
+        "command": "profi-c.runProject",
+        "title": "Run project associated with this file",
+        "category": "Profi-C",
+        "icon": "$(run-all)"
+      },
+      {
+        "command": "profi-c.buildFile",
+        "title": "Build this file",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.buildProject",
+        "title": "Build project associated with this file",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.chooseTarget",
+        "title": "Choose the target platform",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.useTheColors",
+        "title": "Use the Profi-C colors",
+        "category": "Profi-C"
+      }
+    ],
+    "submenus": [
+      {
+        "id": "profi-c.build",
+        "label": "Build",
+        "icon": "$(tools)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "submenu": "profi-c.build",
+          "group": "navigation@1",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        }
+      ],
+      "profi-c.build": [
+        {
+          "command": "profi-c.buildFile",
+          "group": "1_what@1",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.buildProject",
+          "group": "1_what@2"
+        },
+        {
+          "command": "profi-c.chooseTarget",
+          "group": "2_where@1"
+        }
+      ],
+      "editor/title/run": [
+        {
+          "command": "profi-c.runFile",
+          "when": "resourceLangId == profi-c",
+          "group": "navigation@1"
+        },
+        {
+          "command": "profi-c.runProject",
+          "when": "resourceLangId == profi-c",
+          "group": "navigation@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "profi-c.runFile",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        },
+        {
+          "command": "profi-c.runProject",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        }
+      ]
+    },
     "breakpoints": [{ "language": "profi-c" }],
     "debuggers": [
       {
@@ -58,6 +150,12 @@
               "compilerPath": {
                 "type": "string",
                 "description": "The pc command to run for this configuration, overriding the profi-c.compilerPath setting."
+              },
+              "scope": {
+                "type": "string",
+                "enum": ["file", "project"],
+                "default": "file",
+                "description": "Whether to run the program named, or the .pcp project nearest it. 'project' looks upward from the program for one, and runs the program itself where there is none."
               }
             }
           }
@@ -66,37 +164,122 @@
           {
             "type": "profi-c",
             "request": "launch",
-            "name": "Debug the open Profi-C file",
+            "name": "Run this file",
             "program": "${file}"
+          },
+          {
+            "type": "profi-c",
+            "request": "launch",
+            "name": "Run project associated with this file",
+            "program": "${file}",
+            "scope": "project"
           }
         ],
         "configurationSnippets": [
           {
-            "label": "Profi-C: debug the open file",
-            "description": "Debugs whichever Profi-C file is in front of you when you start.",
+            "label": "Profi-C: run this file",
+            "description": "Runs whichever Profi-C file is in front of you when you start.",
             "body": {
               "type": "profi-c",
               "request": "launch",
-              "name": "Debug the open Profi-C file",
+              "name": "Run this file",
               "program": "^\"\\${file}\""
             }
           },
           {
-            "label": "Profi-C: debug a project",
-            "description": "Debugs a .pcp project, which compiles exactly the files it lists.",
+            "label": "Profi-C: run project associated with this file",
+            "description": "Runs the .pcp project nearest the open file, searching upward.",
             "body": {
               "type": "profi-c",
               "request": "launch",
-              "name": "Debug the project",
-              "program": "^\"\\${workspaceFolder}/app.pcp\""
+              "name": "Run project associated with this file",
+              "program": "^\"\\${file}\"",
+              "scope": "project"
             }
           }
         ]
       }
     ],
+    "taskDefinitions": [
+      {
+        "type": "profi-c",
+        "required": ["scope"],
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": ["file", "project"],
+            "description": "Whether to build the open file, or the .pcp project nearest it."
+          },
+          "program": {
+            "type": "string",
+            "description": "What to build. Defaults to the file in front of you."
+          },
+          "runtime": {
+            "type": "string",
+            "description": "The platform to build for. Defaults to the profi-c.targetPlatform setting, and to this machine where that is unset."
+          },
+          "out": {
+            "type": "string",
+            "description": "Where to write the build. Defaults to a 'bin' beside the program."
+          }
+        }
+      }
+    ],
+    "problemMatchers": [
+      {
+        "name": "profi-c-error",
+        "owner": "profi-c",
+        "source": "profi-c",
+        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "severity": "error",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): error (PC\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "code": 4,
+          "message": 5
+        }
+      },
+      {
+        "name": "profi-c-warning",
+        "owner": "profi-c",
+        "source": "profi-c",
+        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "severity": "warning",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): warning (PC\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "code": 4,
+          "message": 5
+        }
+      },
+      {
+        "name": "profi-c-opinion",
+        "owner": "profi-c",
+        "source": "profi-c",
+        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "severity": "info",
+        "pattern": {
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): opinion (PC\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "code": 4,
+          "message": 5
+        }
+      }
+    ],
     "configuration": {
       "title": "Profi-C",
       "properties": {
+        "profi-c.targetPlatform": {
+          "type": "string",
+          "default": "",
+          "description": "The platform a build targets, as .NET names one — win-x64, linux-x64, osx-arm64. Empty means this machine. Choose from the ones installed with 'Profi-C: Choose the target platform', which only offers what can actually be built for."
+        },
         "profi-c.compilerPath": {
           "type": "string",
           "default": "pc",

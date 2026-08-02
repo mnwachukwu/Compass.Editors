@@ -326,11 +326,11 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// README for a while, which is how this test came to exist.</para>
     /// </summary>
     /// <remarks>
-    /// The settings file lives in Profi-C, since it colors that repository's samples while they
-    /// are worked on. It is reached through the sibling checkout for the same reason the
-    /// vocabulary is, and skips the same way when there is none.
+    /// Both files are in this repository. The palette used to live in Profi-C's workspace
+    /// settings and was reached through the sibling checkout, which meant the colors only
+    /// applied in that one folder — it moved here so that installing the extension is enough.
     /// </remarks>
-    [TestCase(".vscode/settings.json")]
+    [TestCase("vscode/palette.js")]
     [TestCase("vscode/README.md")]
     public void EveryColoredScopeIsOneTheGrammarProduces(string file)
     {
@@ -338,8 +338,8 @@ public sealed class EditorGrammarTests : EditorTestBase
         string text = File.ReadAllText(Locate(file));
 
         string[] painted = [.. Regex
-            .Matches(text, @"""scope"":\s*(""[^""]+""|\[[^\]]*\])")
-            .SelectMany(m => Regex.Matches(m.Groups[1].Value, @"""([^""]+)"""))
+            .Matches(text, Scope)
+            .SelectMany(m => Regex.Matches(m.Groups[1].Value, Quoted))
             .Select(m => m.Groups[1].Value)
             .Where(scope => scope.EndsWith(".profi-c", StringComparison.Ordinal))
             .Distinct(StringComparer.Ordinal)];
@@ -360,16 +360,7 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// <para>Anything beginning <c>.vscode/</c> is Profi-C's workspace settings; everything else
     /// is here. Skips rather than fails where Profi-C is not beside this.</para>
     /// </summary>
-    private static string Locate(string file)
-    {
-        if (!file.StartsWith(".vscode/", StringComparison.Ordinal))
-        {
-            return Path.Combine(RepositoryRoot, file);
-        }
-
-        return Path.Combine(
-            ProfiCOrIgnore($"check out Profi-C beside this repository to read {file}"), file);
-    }
+    private static string Locate(string file) => Path.Combine(RepositoryRoot, file);
 
     /// <summary>
     /// Settings files admit comments and a JSON reader does not, so they come out before it is
@@ -378,19 +369,31 @@ public sealed class EditorGrammarTests : EditorTestBase
     private static string StripComments(string text) =>
         Regex.Replace(text, @"^\s*//.*$", string.Empty, RegexOptions.Multiline);
 
+    /// <summary>
+    /// <para>How a rule is written, in either of the two languages that hold one.</para>
+    /// <para>The palette is JavaScript so that the reasoning beside each color survives — JSON
+    /// admits no comments — while the README shows the same rules as JSON, which is what a
+    /// reader would paste into settings. So a key may or may not be quoted and a string may use
+    /// either mark, and these read both rather than each file needing its own reader.</para>
+    /// </summary>
+    private const string Scope = @"""?scope""?\s*:\s*(""[^""]+""|'[^']+'|\[[^\]]*\])";
+
+    private const string Quoted = @"[""']([^""']+)[""']";
+
+    private const string Colored =
+        Scope + @"\s*,\s*""?settings""?\s*:\s*\{([^}]*)\}";
+
     /// <summary>Every color a file gives a Profi-C scope, read off its rules.</summary>
     private static Dictionary<string, string> Palette(string file)
     {
         Dictionary<string, string> painted = new(StringComparer.Ordinal);
 
-        foreach (Match rule in Regex.Matches(
-                     File.ReadAllText(Locate(file)),
-                     @"""scope"":\s*(""[^""]+""|\[[^\]]*\])\s*,\s*""settings"":\s*\{([^}]*)\}"))
+        foreach (Match rule in Regex.Matches(File.ReadAllText(Locate(file)), Colored))
         {
-            if (Regex.Match(rule.Groups[2].Value, @"""foreground"":\s*""([^""]+)""")
+            if (Regex.Match(rule.Groups[2].Value, @"""?foreground""?\s*:\s*[""']([^""']+)[""']")
                 is { Success: true } color)
             {
-                foreach (Match scope in Regex.Matches(rule.Groups[1].Value, @"""([^""]+)"""))
+                foreach (Match scope in Regex.Matches(rule.Groups[1].Value, Quoted))
                 {
                     if (scope.Groups[1].Value.EndsWith(".profi-c", StringComparison.Ordinal))
                     {
@@ -404,28 +407,31 @@ public sealed class EditorGrammarTests : EditorTestBase
     }
 
     /// <summary>
-    /// <para>The palette shown in the extension's README agrees with the one the repository
-    /// uses.</para>
+    /// <para>The palette shown in the README agrees with the one the extension applies.</para>
     /// <para>The README once carried the whole thing and drifted from it on three colors,
-    /// unnoticed, because nothing compared them. It now shows a few rules to give the shape
-    /// and points at <c>.vscode/settings.json</c> for the rest — and the few it shows are held
-    /// to what that file says, since a wrong color in the one place a reader copies from is
-    /// worse than no example at all.</para>
+    /// unnoticed, because nothing compared them. It now shows a few rules to give the shape and
+    /// points at the palette for the rest — and the few it shows are held to what the command
+    /// actually writes, since a wrong color in the one place a reader copies from is worse than
+    /// no example at all.</para>
     /// </summary>
     [Test]
-    public void TheReadmePaletteAgreesWithTheRepositorys()
+    public void TheReadmePaletteAgreesWithTheOneApplied()
     {
-        Dictionary<string, string> repository = Palette(".vscode/settings.json");
+        Dictionary<string, string> applied = Palette(Path.Combine("vscode", "palette.js"));
         Dictionary<string, string> shown = Palette(Path.Combine("vscode", "README.md"));
 
-        Assert.That(shown, Is.Not.Empty, "the README should show some of the palette");
+        Assert.Multiple(() =>
+        {
+            Assert.That(applied, Is.Not.Empty, "the palette should name some colors");
+            Assert.That(shown, Is.Not.Empty, "the README should show some of the palette");
 
-        Assert.That(
-            shown.Where(rule => !repository.TryGetValue(rule.Key, out string? real)
-                                || real != rule.Value)
-                 .Select(rule => $"{rule.Key}: README says {rule.Value}"),
-            Is.Empty,
-            "colors the README shows that the repository does not use");
+            Assert.That(
+                shown.Where(rule => !applied.TryGetValue(rule.Key, out string? real)
+                                    || real != rule.Value)
+                     .Select(rule => $"{rule.Key}: README says {rule.Value}"),
+                Is.Empty,
+                "colors the README shows that the extension does not apply");
+        });
     }
 
     /// <summary>
