@@ -279,9 +279,9 @@
     },
 
     "reserved-type": {
-      "comment": "Types the language provides. Not keywords, so the scanner reads them as ordinary names; they are listed here because a reader still meets them as part of the language. The capitalized name beside each primitive is what carries its constants — Integer.MaxValue, String.Empty — so the case is what tells the two apart: 'integer' is a type to write, 'Integer' a place to read from.",
+      "comment": "Types the language provides. Not keywords, so the scanner reads them as ordinary names; they are listed here because a reader still meets them as part of the language. The capitalized name beside a primitive is what carries its constants — Integer.MaxValue, String.Empty — so the case is what tells the two apart: 'integer' is a type to write, 'Integer' a place to read from.",
       "name": "support.class.profi-c",
-      "match": "\\b(Model|Function|Console|Reference|Math|Random|Fraction|Integer|Real|Float|Character|String|DateTime|TimeSpan|Date|Time|File|Directory|Program|Exception|IOException|ArgumentException|DivideByZeroException|EmptyOptionalException|FormatException|IndexOutOfRangeException|InvalidCastException|OverflowException|RecursionTooDeepException|SequenceChangedException)\\b"
+      "match": "\\b(Model|Function|Console|Reference|Math|Random|Fraction|Integer|Real|Float|String|DateTime|TimeSpan|Date|Time|File|Directory|Program|Exception|IOException|ArgumentException|DivideByZeroException|EmptyOptionalException|FormatException|IndexOutOfRangeException|InvalidCastException|OverflowException|RecursionTooDeepException|SequenceChangedException)\\b"
     },
 
     "constant": {
