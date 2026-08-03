@@ -114,6 +114,10 @@
       "patterns": [
         { "comment": "A base is offered first, or the leading 0 colors as an integer and the rest as a name.", "name": "constant.numeric.integer.profi-c", "match": "\\b0[xX][0-9a-fA-F_]+\\b" },
         { "comment": "Binary, for the same reason.", "name": "constant.numeric.integer.profi-c", "match": "\\b0[bB][01_]+\\b" },
+        { "comment": "A float carries an 'f' against it, and each form is offered before the real it would otherwise match — the suffix is part of the number, and left to the rules below it would color as a name stuck to one.", "name": "constant.numeric.float.profi-c", "match": "\\b[0-9][0-9_]*(\\.[0-9][0-9_]*)?[eE][+-]?[0-9][0-9_]*[fF]\\b" },
+        { "name": "constant.numeric.float.profi-c", "match": "\\b[0-9][0-9_]*\\.[0-9][0-9_]*[fF]\\b" },
+        { "comment": "A whole number may carry it too: '3f' is a float.", "name": "constant.numeric.float.profi-c", "match": "\\b[0-9][0-9_]*[fF]\\b" },
+
         { "comment": "A real, with or without a point, so long as it carries an exponent.", "name": "constant.numeric.real.profi-c", "match": "\\b[0-9][0-9_]*(\\.[0-9][0-9_]*)?[eE][+-]?[0-9][0-9_]*\\b" },
         { "name": "constant.numeric.real.profi-c", "match": "\\b[0-9][0-9_]*\\.[0-9][0-9_]*\\b" },
         { "name": "constant.numeric.integer.profi-c", "match": "\\b[0-9][0-9_]*\\b" }
@@ -223,7 +227,7 @@
         },
         {
           "comment": "A parameter whose type is a primitive. The type has to be captured here rather than left for the rule that usually colors it: this match begins at the bracket or comma, one character earlier, and the engine takes whichever match starts first — so leaving the word alone would mean consuming it with nothing said about it.",
-          "match": "([(,])\\s*(integer|real|boolean|character|string|fraction)((?:\\[\\])?\\??)\\s+(@?[\\p{L}_][\\p{L}\\p{Nd}_]*)\\s*(?=[,)])",
+          "match": "([(,])\\s*(integer|real|float|boolean|character|string|fraction)((?:\\[\\])?\\??)\\s+(@?[\\p{L}_][\\p{L}\\p{Nd}_]*)\\s*(?=[,)])",
           "captures": {
             "2": { "name": "storage.type.profi-c" },
             "4": { "name": "variable.parameter.profi-c" }
@@ -271,7 +275,7 @@
     "type": {
       "comment": "The primitive types, and the word that writes the type of a function. 'delegate' sits here rather than with the declaring words because that is what it does: it builds a type, as '[]' and '?' do, and never declares anything.",
       "name": "storage.type.profi-c",
-      "match": "\\b(integer|real|boolean|character|string|fraction|delegate)\\b"
+      "match": "\\b(integer|real|float|boolean|character|string|fraction|delegate)\\b"
     },
 
     "reserved-type": {

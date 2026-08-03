@@ -348,8 +348,8 @@ Two limits worth knowing:
 ## What it colors
 
 Reserved words, the primitive types, the types the language provides, literals of every form
-including fraction literals like `22|7`, block strings, the holes in an interpolated string,
-both comment forms, and the name a declaration introduces. A closer and what it closes read as one thing, so `end function` colors together
+including fraction literals like `22|7` and floats like `3.14f`, block strings, the holes in an
+interpolated string, both comment forms, and the name a declaration introduces. A closer and what it closes read as one thing, so `end function` colors together
 rather than as a keyword beside a noun.
 
 ## Comments the compiler heeds
