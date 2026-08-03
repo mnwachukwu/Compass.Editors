@@ -783,6 +783,44 @@ public sealed class DebuggerContributionTests : EditorTestBase
     }
 
     /// <summary>
+    /// <para>The colors the compiler decides are installed too, and can actually take effect.
+    /// </para>
+    /// <para>Three things have to be true together, and getting two of them right looks exactly
+    /// like getting none of them right — the file simply goes on looking as it did. The rules
+    /// have to be written to the semantic setting rather than the grammar's. They have to name
+    /// this language, or a rule saying what a local looks like repaints every other language the
+    /// reader has open. And semantic highlighting has to be turned on: it ships as
+    /// <c>configuredByTheme</c>, so a theme that does not ask for it discards the whole
+    /// thing.</para>
+    /// </summary>
+    [Test]
+    public void TheColorsTheCompilerDecidesAreInstalledAndTurnedOn()
+    {
+        string palette = File.ReadAllText(Path.Combine(Extension, "palette.js"));
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(palette, Does.Contain("semanticRules"));
+
+            Assert.That(
+                script,
+                Does.Contain("editor.semanticTokenColorCustomizations"),
+                "the setting the grammar's colors do not live in");
+
+            Assert.That(
+                script,
+                Does.Contain(":profi-c"),
+                "scoped to this language, or it repaints every other one");
+
+            Assert.That(
+                script,
+                Does.Contain("editor.semanticHighlighting.enabled"),
+                "or a theme that does not ask for it discards all of the above");
+        });
+    }
+
+    /// <summary>
     /// <para>The version was raised alongside what the manifest contributes.</para>
     /// <para>VS Code reads <c>contributes</c> once, at the scan, and records it with the version
     /// beside it. A manifest edited without a bump goes on being served as whatever was recorded

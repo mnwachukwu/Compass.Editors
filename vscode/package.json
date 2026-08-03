@@ -2,16 +2,21 @@
   "name": "profi-c",
   "displayName": "Profi-C",
   "description": "Syntax highlighting and debugging for Profi-C.",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "publisher": "profi-c",
   "license": "MIT",
-  "engines": { "vscode": "^1.75.0" },
+  "engines": {
+    "vscode": "^1.91.0"
+  },
   "main": "./extension.js",
   "devDependencies": {
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.1.0"
   },
-  "categories": ["Programming Languages", "Debuggers"],
+  "categories": [
+    "Programming Languages",
+    "Debuggers"
+  ],
   "activationEvents": [
     "onDebugResolve:profi-c",
     "onDebugDynamicConfigurations:profi-c",
@@ -22,14 +27,23 @@
     "languages": [
       {
         "id": "profi-c",
-        "aliases": ["Profi-C", "profi-c"],
-        "extensions": [".pc"],
+        "aliases": [
+          "Profi-C",
+          "profi-c"
+        ],
+        "extensions": [
+          ".pc"
+        ],
         "configuration": "./language-configuration.json"
       },
       {
         "id": "profi-c-project",
-        "aliases": ["Profi-C Project"],
-        "extensions": [".pcp"],
+        "aliases": [
+          "Profi-C Project"
+        ],
+        "extensions": [
+          ".pcp"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -132,15 +146,24 @@
         }
       ]
     },
-    "breakpoints": [{ "language": "profi-c" }],
+    "breakpoints": [
+      {
+        "language": "profi-c"
+      }
+    ],
     "debuggers": [
       {
         "type": "profi-c",
         "label": "Profi-C",
-        "languages": ["profi-c", "profi-c-project"],
+        "languages": [
+          "profi-c",
+          "profi-c-project"
+        ],
         "configurationAttributes": {
           "launch": {
-            "required": ["program"],
+            "required": [
+              "program"
+            ],
             "properties": {
               "program": {
                 "type": "string",
@@ -153,7 +176,10 @@
               },
               "scope": {
                 "type": "string",
-                "enum": ["file", "project"],
+                "enum": [
+                  "file",
+                  "project"
+                ],
                 "default": "file",
                 "description": "Whether to run the program named, or the .pcp project nearest it. 'project' looks upward from the program for one, and runs the program itself where there is none."
               }
@@ -203,11 +229,16 @@
     "taskDefinitions": [
       {
         "type": "profi-c",
-        "required": ["scope"],
+        "required": [
+          "scope"
+        ],
         "properties": {
           "scope": {
             "type": "string",
-            "enum": ["file", "project"],
+            "enum": [
+              "file",
+              "project"
+            ],
             "description": "Whether to build the open file, or the .pcp project nearest it."
           },
           "program": {
@@ -230,7 +261,10 @@
         "name": "profi-c-error",
         "owner": "profi-c",
         "source": "profi-c",
-        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
         "severity": "error",
         "pattern": {
           "regexp": "^(.*)\\((\\d+),(\\d+)\\): error (PC\\d+): (.*)$",
@@ -245,7 +279,10 @@
         "name": "profi-c-warning",
         "owner": "profi-c",
         "source": "profi-c",
-        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
         "severity": "warning",
         "pattern": {
           "regexp": "^(.*)\\((\\d+),(\\d+)\\): warning (PC\\d+): (.*)$",
@@ -260,7 +297,10 @@
         "name": "profi-c-opinion",
         "owner": "profi-c",
         "source": "profi-c",
-        "fileLocation": ["autoDetect", "${workspaceFolder}"],
+        "fileLocation": [
+          "autoDetect",
+          "${workspaceFolder}"
+        ],
         "severity": "info",
         "pattern": {
           "regexp": "^(.*)\\((\\d+),(\\d+)\\): opinion (PC\\d+): (.*)$",
@@ -287,5 +327,8 @@
         }
       }
     }
+  },
+  "dependencies": {
+    "vscode-languageclient": "^10.1.0"
   }
 }

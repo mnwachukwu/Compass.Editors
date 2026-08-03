@@ -49,6 +49,14 @@ const Diagnostic = /^(.*)\((\d+),(\d+)\): (error|warning|opinion) (PC\d+): (.*)$
 let collected;
 
 /**
+ * The connection to `pc lsp`, or undefined where there is none.
+ *
+ * Undefined is an ordinary state rather than a failure: a compiler too old to know the command
+ * has no server to connect to, and everything else in this extension goes on working without one.
+ */
+let client;
+
+/**
  * The collection a refused run writes into, made the first time there is something to write.
  *
  * Made on demand rather than at activation so that the function that writes to it is the one
@@ -92,12 +100,80 @@ function activate(context) {
             resolveTask: fillInTheRest,
         }),
 
-        // Breadcrumbs, the Outline view and Ctrl+Shift+O, all from the one provider.
-        vscode.languages.registerDocumentSymbolProvider(
-            { language: 'profi-c' },
-            { provideDocumentSymbols: outline }),
-
         showTheTarget(context));
+
+    startTheServer(context);
+}
+
+/**
+ * Connects to the compiler's language server, which answers about files as they are being typed.
+ *
+ * **Why a server rather than another command.** Everything else here runs `pc` and waits: the
+ * outline, the project a file belongs to, the check before a run. Each reads the file *from
+ * disk*, which is the only thing a separate process can do — so none of them can say anything
+ * about the buffer in front of the reader, and half of what is in that buffer at any moment is
+ * not valid Profi-C anyway. A server holds what the editor holds, and is told about each edit.
+ *
+ * It also removes what dominates the cost. A whole-file re-analysis is a few milliseconds;
+ * starting a process to do it is a few hundred, every time.
+ *
+ * **Failing to start is not an error to report.** A compiler that predates the command answers
+ * that it does not know it, and everything else in this extension goes on working — highlighting
+ * is declarative, and running and building are their own commands. Somebody who has not upgraded
+ * should not get a dialog about a feature they have never seen. The client's own output channel
+ * records what happened for anyone looking.
+ */
+function startTheServer(context) {
+    const { LanguageClient } = require('vscode-languageclient/node');
+
+    // Both halves are the same command. A server started differently from the compiler that
+    // builds would answer about a different language than the one that runs.
+    const run = { command: compiler(), args: ['lsp'] };
+
+    client = new LanguageClient(
+        'profi-c',
+        'Profi-C',
+        { run, debug: run },
+        {
+            documentSelector: Debuggable.map(language => ({ scheme: 'file', language })),
+
+            // Diagnostics for a file arrive against that file, so the panel is grouped the way
+            // a reader expects even when the mistake is in something they never opened.
+            diagnosticCollectionName: 'profi-c',
+        });
+
+    client.start().catch(() => {
+        client = undefined;
+        context.subscriptions.push(outlineWithoutAServer());
+    });
+}
+
+/**
+ * Breadcrumbs and the Outline view, for a compiler with no `lsp` command.
+ *
+ * **Registered only where the server did not start**, and that is the whole reason it still
+ * exists. VS Code merges the answers of every provider for a language, so registering this
+ * beside a running server would show every declaration twice.
+ *
+ * What it loses is what a separate process cannot have: `pc outline` reads the file from disk, so
+ * a document with unsaved edits outlines as it was last saved. The server has no such limit, and
+ * removing this entirely is right once no compiler in use predates `pc lsp`.
+ */
+function outlineWithoutAServer() {
+    return vscode.languages.registerDocumentSymbolProvider(
+        { language: 'profi-c' },
+        { provideDocumentSymbols: outline });
+}
+
+/**
+ * Stops the server when the editor closes, so it does not outlive what it was answering.
+ *
+ * Named `deactivate` because that is what VS Code calls: an extension that leaves a child process
+ * running leaves one per window, and they are only noticed by somebody wondering what is using
+ * their memory.
+ */
+function deactivate() {
+    return client ? client.stop() : undefined;
 }
 
 /**
@@ -271,6 +347,8 @@ async function start(file, scope) {
         return;
     }
 
+    await saveWhatWillBeCompiled();
+
     if (!showProblems(checked(document.fsPath, scope))) {
         // Refused, and the reasons are in the Problems panel where every other language puts
         // them. Starting the session anyway would have the adapter refuse it a second time and
@@ -304,6 +382,8 @@ async function build(file, scope) {
         return;
     }
 
+    await saveWhatWillBeCompiled();
+
     // The same question Run asks, answered by the same code — so "no project lists this file"
     // cannot mean one thing when running and another when building.
     const program = scope === TheProject
@@ -311,6 +391,34 @@ async function build(file, scope) {
         : document.fsPath;
 
     await vscode.tasks.executeTask(buildTask(program, scope, target()));
+}
+
+/**
+ * Saves every Profi-C file with unsaved edits, before anything is compiled.
+ *
+ * **The compiler reads files, not buffers.** Without this, pressing Run after fixing a mistake
+ * compiles the mistake: the diagnostics are about text the reader can no longer see, and the
+ * program that runs is the one they just changed away from. For a beginner that reads as the
+ * language ignoring them, which is the worst thing a Run button can do.
+ *
+ * Saving rather than handing the buffer over is the choice, and it buys something: what ran is
+ * what is on disk, so `pc run` in a terminal gives the same answer as the button. A buffer piped
+ * to the compiler would produce a result nothing else could reproduce.
+ *
+ * Every Profi-C file rather than the open one, because a program is a compilation: editing
+ * `Shelf.pc` and pressing Run in `Program.pc` has to compile the new `Shelf.pc`. And only
+ * Profi-C files, since saving somebody's unrelated notes is not what they asked for.
+ *
+ * A file never saved is left alone. It has no path to compile and saving it would open a dialog
+ * nobody asked for; running it was never going to work.
+ */
+async function saveWhatWillBeCompiled() {
+    const unsaved = vscode.workspace.textDocuments.filter(
+        document => document.isDirty
+            && !document.isUntitled
+            && Debuggable.includes(document.languageId));
+
+    await Promise.all(unsaved.map(document => document.save()));
 }
 
 /**
@@ -380,6 +488,14 @@ function readDiagnostics(output) {
 function showProblems(found) {
     if (!found) {
         return true;
+    }
+
+    // The server owns the panel while it is running, and has already put these there — it
+    // publishes as the reader types rather than when they press a button. Writing them a second
+    // time would show every problem twice, from two owners, and clearing one would leave the
+    // other. The verdict below is still this one's to give: it is what decides whether to start.
+    if (client) {
+        return !found.some(one => one.severity === 'error');
     }
 
     problemsPanel().clear();
@@ -589,6 +705,10 @@ function compiler() {
  *
  * Any Profi-C rule already there is replaced rather than added to, so running this twice leaves
  * one copy, and rules for other languages are left exactly as they were.
+ *
+ * Two settings, because there are two kinds of color. The grammar's rules say what a run of
+ * characters looks like; the semantic ones say what the compiler worked out it is, and they are
+ * scoped to this language so nothing here touches how any other one is painted.
  */
 async function useTheColors() {
     const settings = vscode.workspace.getConfiguration();
@@ -601,8 +721,44 @@ async function useTheColors() {
         { ...current, textMateRules: [...others, ...palette.rules] },
         vscode.ConfigurationTarget.Global);
 
+    const semantic = vscode.workspace.getConfiguration()
+        .get('editor.semanticTokenColorCustomizations') || {};
+
+    await settings.update(
+        'editor.semanticTokenColorCustomizations',
+        {
+            ...semantic,
+            rules: { ...(semantic.rules || {}), ...scopedToProfiC(palette.semanticRules) },
+        },
+        vscode.ConfigurationTarget.Global);
+
+    // Without this the rules above can do nothing, and say nothing about why. Semantic
+    // highlighting ships set to 'configuredByTheme', so a theme that does not ask for it turns
+    // the whole feature off — the server answers, the colors are in settings, and the file looks
+    // exactly as it did. Turned on for this language alone, so no other one is affected.
+    const forProfiC = vscode.workspace.getConfiguration().get('[profi-c]') || {};
+
+    await settings.update(
+        '[profi-c]',
+        { ...forProfiC, 'editor.semanticHighlighting.enabled': true },
+        vscode.ConfigurationTarget.Global);
+
+    const total = palette.rules.length + Object.keys(palette.semanticRules).length;
+
     vscode.window.showInformationMessage(
-        `Profi-C: ${palette.rules.length} color rules are now in your user settings.`);
+        `Profi-C: ${total} color rules are now in your user settings.`);
+}
+
+/**
+ * Narrows each semantic rule to this language, since the setting is shared by every one of them.
+ *
+ * A rule written as `variable` would color a local in C# and in TypeScript too. Written as
+ * `variable:profi-c` it colors a local in a `.pc` file and nowhere else, which is the only
+ * version of this that is polite to install into somebody's global settings.
+ */
+function scopedToProfiC(rules) {
+    return Object.fromEntries(
+        Object.entries(rules).map(([kind, color]) => [`${kind}:profi-c`, color]));
 }
 
 /** Whether a rule paints Profi-C, whichever of the two shapes its scope was written in. */
@@ -612,9 +768,6 @@ function isProfiC(rule) {
         : [];
 
     return scopes.some(scope => String(scope).endsWith('.profi-c'));
-}
-
-function deactivate() {
 }
 
 /**

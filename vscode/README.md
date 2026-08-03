@@ -17,11 +17,21 @@ one file rather than a running analysis of all of them.
 enough that publishing an extension for it would be putting up a shopfront before there is
 anything to sell. Installing it means putting this folder where VS Code looks, which is all the
 Marketplace would do anyway. There is no build step: the grammars are declarative and the one
-script is plain JavaScript with nothing to compile and no dependencies to fetch. Once it is
-published, `code --install-extension` replaces all of this.
+script is plain JavaScript with nothing to compile. Once it is published,
+`code --install-extension` replaces all of this.
 
-There are two ways to do it, and which one is right depends on whether the grammar is going to
-change under you.
+**Fetch the one dependency first**, from this folder:
+
+```bash
+npm install --omit=dev
+```
+
+That is `vscode-languageclient`, which is how the extension talks to `pc lsp` — the compiler
+answering questions about a file while it is being typed. Everything else here works without it,
+so a failed install costs the live diagnostics and nothing more.
+
+There are then two ways to install, and which one is right depends on whether the grammar is
+going to change under you.
 
 ### Linking it — for anyone editing the language
 
@@ -182,6 +192,129 @@ only what gets compiled. Whichever you pick last becomes what a single click doe
 same place a build puts them, clickable to the line, and the panel is opened for you. Warnings
 and opinions appear there too and stop nothing: the compiler runs a program that has them, so an
 editor that refused to would be answering a different question than the compiler does.
+
+**Both buttons save first.** The compiler reads files rather than buffers, so pressing Run with
+unsaved edits would compile the version you have just changed away from — and report mistakes
+about text no longer on screen. Every Profi-C file with unsaved edits is saved before anything is
+compiled, which also means what ran is what is on disk: `pc run` in a terminal gives the same
+answer as the button.
+
+## Diagnostics while you type
+
+Open a `.pc` file and the compiler starts answering about it as you write, through `pc lsp` — a
+language server that stays open and holds the file as the editor holds it, rather than reading
+what was last saved.
+
+**It waits for you to stop.** Analysis runs about a third of a second after the last keystroke,
+not on every one. The reason is not cost — a thousand-line file goes through the whole front end
+in single-digit milliseconds — but that diagnostics flickering while you type are worse than
+none: half-written code is full of errors that are not errors, and a panel strobing red teaches a
+beginner to ignore it. Opening and saving do not wait, since both are you saying you have
+stopped.
+
+**A program is a compilation, not a file.** A mistake in `Shelf.pc` is reported against
+`Shelf.pc` even where you are looking at `Program.pc` and have never opened it — and it is
+cleared from the panel when it is fixed, which takes an explicit message rather than silence.
+
+The same server answers everything else about wherever the cursor is:
+
+| | |
+|---|---|
+| **Hover** | What the thing under the cursor is — a local's type, or a function written out with what it yields and what it takes |
+| **Go to definition** | `F12`, and it crosses files: a name declared in `Shelf.pc` is followed from `Program.pc` |
+| **Breadcrumbs and the Outline** | What the file declares. This used to come from `pc outline`, which reads the disk — so it showed the file as last saved. It now follows what you are typing |
+| **Completion** | After a dot, typing `word.` lists what a `string` answers, `shape.` what that model declares and inherited, `Math.` what is reached through the name. On its own, the locals and parameters in force, every type you can reach, and `this` |
+| **Signature help** | What a function takes, while you are typing the arguments — which is when you cannot see the declaration, because you are looking at the call |
+| **Quick fixes** | The lightbulb beside `&&` offers `and`. Also `\|\|`, `**` and `!` |
+| **Rename** | `F2` changes a name everywhere it is written, across every file in the program — and refuses on a name the language owns, since renaming `Count` would edit your uses and leave the compiler's declaration where it is |
+| **Coloring by what a name is** | Every name colored for what the compiler worked out it means, rather than for what it looks like on the line |
+| **Every use of a name** | Put the caret on a name and the other places this file writes it are marked, with the ones that assign to it marked differently from the ones that read it |
+| **Formatting** | `Shift+Alt+F`, or a selection with `Ctrl+K Ctrl+F`. It lines your code up and never moves it |
+
+**Rename is the one answer that writes to your files, so it is the one that asks the compiler
+hardest.** Every edit is an identifier the parser recorded the position of while reading it, and
+which names to change is which nodes the resolver bound to the same thing — not a text search,
+and not a second opinion here about what is in scope. What `F2` offers is what the compiler
+believes; the two cannot drift, because there is only one of them.
+
+**The formatter lines your code up and never moves it.** It fixes indentation and spacing;
+it does not wrap a long line, join two short ones, or reorder anything. That is a smaller promise
+than most formatters make and it is one that can be kept in every case — including the two that
+matter most while you are writing. **A comment cannot be lost**, because nothing is ever removed
+from a line, only the whitespace in front of it. And **a file that will not compile is formatted
+anyway**, because none of this needs a syntax tree.
+
+Where a wrapped line goes is decided by the line above it. If that line ended with a comma or an
+opening bracket, something new begins, and it lines up with the first thing in the bracket — so
+the rows of a matrix line up with the first row. Otherwise it carries the line above on, and takes
+one indent past that column, so it does not read as another argument when it is the rest of one.
+A lambda written across several lines is the exception: its body is a body, and nests from the
+statement rather than being pushed out to wherever the call's bracket fell.
+
+Two things it will not touch. The inside of a block string is the string — those spaces are
+characters your program holds, down to the trailing ones. The inside of a block comment is prose
+you laid out.
+
+**Marking every use is rename's question without the edit**, which is why it can be asked far more
+often — it runs whenever the caret moves, rather than when you have committed to something. Two
+locals in different functions both called `value` are two names and are marked separately, which
+is the thing a text search gets wrong. And unlike `F2` it answers for names the language owns:
+putting the caret on `Count` marks every `Count` on a *string* and leaves the ones on a set alone,
+because those are different members that happen to share a spelling.
+
+**A quick fix is only offered where one substitution does the whole job.** `x += 1` has a good
+message and no button: it becomes `x = x + 1`, which needs to know what `x` is. A button that
+produced `x = 1` would be worse than none.
+
+**The coloring is two things, and the second one is new.** The highlighting that arrives with the
+file is a grammar: regex over a line, which is why it is instant and why it works on a file
+nothing has compiled yet. It can see that `total` is an identifier. It cannot see that `total` is
+the parameter declared six lines up, because that is a question about meaning.
+
+So the server answers that half. Every name is classified from the compiled program, and two
+things follow that a grammar could never have done:
+
+- **A parameter looks like a parameter everywhere**, not only in the signature. The grammar
+  colored the name in `function Length(string word)` because of where it sat on the line and gave
+  up on `word` in the body. That was always the half you spend your time reading.
+- **A local gets a color of its own** — the light mint. Worth it here for a reason peculiar to
+  this language: a field is written through `this.` and a shared member through a type name, so
+  both announce themselves before you reach the name. A local carries no marker at all.
+
+You also get `constant` rendered as read-only and `shared` as static without anybody picking a
+color, because the server describes a name in the protocol's own vocabulary and most themes
+already have opinions about those.
+
+**Run `Profi-C: Use the Profi-C colors` to get them.** It writes both sets into your own settings
+— an extension cannot impose colors — and turns semantic highlighting on for `.pc` files, which
+matters more than it sounds: it ships set to "whatever the theme wants", so a theme that does not
+ask for it would discard all of the above and say nothing about why.
+
+**Completion is the one question that cannot be asked of what you have written.** `word.` is not
+Profi-C and never will be — there is no member yet, so there is no member access to ask about. The
+server puts a name where the member will go, compiles *that*, and reads the receiver off it. So
+what is offered is what the compiler would resolve, rather than a guess made by something reading
+half-written syntax.
+
+What it will not offer is a member you could not reach: a private field is left out, because a
+suggestion the next keystroke refuses is worse than a shorter list.
+
+**A bare name needs no such trick, and could not use one.** What is wanted there is not the type
+of something you wrote but which names are in force where the cursor sits — so the compiler writes
+that down as it resolves, and the server reads it. You get the locals and parameters actually in
+scope (not the ones from a block that has closed, and not one declared further down the file),
+every type you can reach by name, and `this` where there is an instance to speak of. That last one
+matters more here than it would elsewhere: every field is written through `this.`, so it is the
+first thing typed on a great many lines.
+
+A scope is a stretch of the file rather than a piece of syntax, which is why this still works on
+the line you are in the middle of typing — the half-written line does not have to parse for the
+names around it to be known.
+
+A compiler too old to know the command has no server to connect to, and nothing says so: the
+highlighting is declarative, and running and building are their own commands. The outline falls
+back to `pc outline` in that case, which is why it is still there. The client's output channel
+records what happened for anyone looking.
 
 **🔨 Build** sits immediately to its right:
 

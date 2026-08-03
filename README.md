@@ -69,8 +69,12 @@ Roughly in the order it is wanted:
 
 1. **Project management** — commands for creating a `.pcp`, adding and removing files, setting
    the entry point, and running or cleaning without leaving the editor.
-2. **A language server** — live diagnostics, completion, hover types, go to definition.
-3. **A formatter.**
+
+**The language server itself is done** — live diagnostics as you type, hover types, go to
+definition, completion both after a dot and for a bare name, signature help, quick fixes, rename,
+coloring every name for what the compiler worked out it is, marking every use of the name under
+the caret, and formatting. What it does and how much of it is `pc` rather than JavaScript is in
+[the extension's README](vscode/README.md).
 
 ## The vocabulary, and why the tests need Profi-C beside them
 

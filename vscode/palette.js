@@ -78,13 +78,13 @@ const rules = [
     // A parameter, where it is declared. Light, and in the same family as the word that
     // declared it: a parameter belongs to its function more than to the body reading it.
     //
-    // This marks the signature and nothing else. Coloring a parameter where it is *used* would
-    // mean knowing that a name in the body is bound to one, which is a question about meaning
-    // rather than about shape, and no grammar can answer it — the compiler can, and will, once
-    // the editor is able to ask. The scope name will not change when it does.
+    // This marks the signature and nothing else, because a grammar can only see where a name
+    // sits on the line. Knowing that a name in the body is bound to the same parameter is a
+    // question about meaning, and it is answered in semanticRules below, in this same color —
+    // so the two halves of one idea look like one idea.
     //
-    // Members are deliberately left alone: 'this.' already marks them, and a color on top of a
-    // prefix the language requires would be saying the same thing twice.
+    // Members are deliberately left alone here: 'this.' already marks them, and a color on top
+    // of a prefix the language requires would be saying the same thing twice.
     {
         scope: 'variable.parameter.profi-c',
         settings: { foreground: '#D0BFFF' },
@@ -181,4 +181,51 @@ const rules = [
     },
 ];
 
-module.exports = { rules };
+// Colors for what the compiler knows, as against what the grammar can see.
+//
+// These are semantic tokens: the language server classifies every name from the compiled program
+// and says what each one is. A grammar can color a parameter in a signature because of where it
+// sits on the line; only the compiler knows that a bare name four lines down is the same thing.
+//
+// They live in a different setting than the rules above and win over them where both apply, which
+// is what makes this an addition rather than a rewrite: everything the grammar already colors
+// well is left as it was, and these say the few things it could never have said.
+//
+// Written in the protocol's vocabulary rather than Profi-C's, so a reader who never runs the
+// command still gets something sensible out of whatever theme they are on.
+const semanticRules = {
+    // A parameter, wherever it is written.
+    //
+    // The same color the grammar gives it in a signature, which is the entire point: the color
+    // stops meaning "a name inside a parameter list" and starts meaning "a parameter". The two
+    // look identical because they are the same thing.
+    parameter: '#D0BFFF',
+
+    // A local. The light mint — read as a value rather than as a structure, and the one color in
+    // that range nothing else here spends.
+    //
+    // Worth a color of its own for a reason peculiar to this language. A field is reached through
+    // 'this.' and a shared member through a type name, so both announce themselves before you get
+    // to the name. A local in a function body carries no marker at all, and is the name a reader
+    // meets most often.
+    variable: '#B5CEA8',
+
+    // A type a program declared, matching what the grammar already gives one. Repeated rather
+    // than left out: a semantic token wins where both apply, so saying nothing here would take
+    // the color away instead of leaving it alone.
+    class: '#4EC9B0',
+    struct: '#4EC9B0',
+    enum: '#4EC9B0',
+    type: '#4EC9B0',
+
+    // A function and a method, matching the grammar for the same reason.
+    function: '#DCDCAA',
+    method: '#DCDCAA',
+
+    // A field and a member of an enumeration. Both are always written after something already
+    // colored — 'this.', a type name — so they follow the value colors rather than the type ones.
+    property: '#9CDCFE',
+    enumMember: '#4FC1FF',
+};
+
+module.exports = { rules, semanticRules };
