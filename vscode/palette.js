@@ -140,6 +140,7 @@ const rules = [
         scope: [
             'constant.numeric.integer.profi-c',
             'constant.numeric.real.profi-c',
+            'constant.numeric.float.profi-c',
             'constant.numeric.fraction.profi-c',
         ],
         settings: { foreground: '#E6C07B' },

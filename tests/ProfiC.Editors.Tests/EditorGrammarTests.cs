@@ -184,12 +184,29 @@ public sealed class EditorGrammarTests : EditorTestBase
     {
         HashSet<string> words = WordsInGrammar();
 
-        string[] missing = [.. Vocabulary().ReservedWords
-                                           .Where(word => !words.Contains(word))
-                                           .OrderBy(word => word, StringComparer.Ordinal)];
+        string[] reserved = Vocabulary().ReservedWords;
 
-        Assert.That(missing, Is.Empty, "reserved words the editor grammar does not color");
+        string[] missing = [.. reserved.Where(word => !words.Contains(word))
+                                       .OrderBy(word => word, StringComparer.Ordinal)];
+
+        Assert.That(missing, Is.Empty, Against(reserved.Length,
+            "reserved words the editor grammar does not color"));
     }
+
+    /// <summary>
+    /// <para>What a mismatch is being measured against, said out loud.</para>
+    /// <para><b>These three compare two repositories, so a failure has two explanations and only
+    /// one of them is a fault here.</b> The vocabulary comes from a sibling checkout, and in CI
+    /// that checkout is of Profi-C's default branch at the moment this job started — so a commit
+    /// here that lands minutes before the language change it goes with reads a vocabulary from
+    /// before it. That happened with <c>float</c>: the grammar was right, the word was reserved,
+    /// and the run still failed. Naming the count turns the same failure into one a reader can
+    /// tell apart at a glance, since a stale sibling is short by exactly the words it has not
+    /// heard of.</para>
+    /// </summary>
+    private static string Against(int words, string what) =>
+        $"{what} (read against a vocabulary of {words} reserved words — if that number looks "
+        + "low, the Profi-C checkout beside this one is older than the change being tested)";
 
     /// <summary>
     /// And every type the language provides, which the scanner reads as an ordinary name and
@@ -200,11 +217,13 @@ public sealed class EditorGrammarTests : EditorTestBase
     {
         HashSet<string> words = WordsInGrammar();
 
-        string[] missing = [.. Vocabulary().TypeNames
-                                           .Where(name => !words.Contains(name))
-                                           .OrderBy(name => name, StringComparer.Ordinal)];
+        string[] provided = Vocabulary().TypeNames;
 
-        Assert.That(missing, Is.Empty, "types the editor grammar does not color");
+        string[] missing = [.. provided.Where(name => !words.Contains(name))
+                                       .OrderBy(name => name, StringComparer.Ordinal)];
+
+        Assert.That(missing, Is.Empty, Against(provided.Length,
+            "types the editor grammar does not color"));
     }
 
     /// <summary>
@@ -238,7 +257,8 @@ public sealed class EditorGrammarTests : EditorTestBase
                                 .Where(word => !reserved.Contains(word))
                                 .OrderBy(word => word, StringComparer.Ordinal)];
 
-        Assert.That(unknown, Is.Empty, "words the grammar colors that the language does not reserve");
+        Assert.That(unknown, Is.Empty, Against(reserved.Count,
+            "words the grammar colors that the language does not reserve"));
     }
 
     /// <summary>
@@ -352,6 +372,55 @@ public sealed class EditorGrammarTests : EditorTestBase
                 painted.Where(scope => !grammar.Contains(scope, StringComparison.Ordinal)),
                 Is.Empty,
                 $"scopes {file} colors that the grammar no longer produces");
+        });
+    }
+
+    /// <summary>
+    /// <para>Every scope the grammar produces is one the palette paints, unless it is on the
+    /// list below of scopes deliberately left to the theme.</para>
+    /// <para><b>The other direction, and the one that catches a scope being added.</b> The test
+    /// above finds a scope that was renamed away; nothing found a scope that was newly
+    /// introduced and never given a color — which is silent in a different way. The grammar goes
+    /// on tokenizing perfectly, the new token simply falls through to whatever the theme happens
+    /// to say, and it reads as one kind of thing colored like another. <c>float</c> literals did
+    /// exactly that: colored correctly by the grammar, named nowhere in the palette, and so
+    /// painted unlike every other number.</para>
+    /// <para>The allowances are a decision rather than an oversight, which is why they are
+    /// written out. A theme already colors <c>invalid</c>, the operator families are offered in
+    /// the README for anyone who wants them and are plainer left alone, and the root and the
+    /// separators are not things to paint.</para>
+    /// </summary>
+    [Test]
+    public void EveryScopeTheGrammarProducesIsPainted()
+    {
+        string[] unpainted =
+        [
+            "source.profi-c",
+            "punctuation.separator.profi-c",
+            "invalid.illegal.unknown-escape.profi-c",
+            "keyword.operator.arithmetic.profi-c",
+            "keyword.operator.assignment.profi-c",
+            "keyword.operator.comparison.profi-c",
+            "keyword.operator.optional.profi-c",
+        ];
+
+        string palette = File.ReadAllText(Locate("vscode/palette.js"));
+
+        string[] produced = [.. Regex
+            .Matches(File.ReadAllText(GrammarPath), @"[\w.\-]+\.profi-c")
+            .Select(m => m.Value)
+            .Distinct(StringComparer.Ordinal)
+            .Except(unpainted, StringComparer.Ordinal)];
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(produced, Is.Not.Empty, "the grammar should produce some scopes");
+
+            Assert.That(
+                produced.Where(scope => !palette.Contains(scope, StringComparison.Ordinal)),
+                Is.Empty,
+                "scopes the grammar produces that no rule colors — give each one a color, or "
+                + "add it to the list of scopes deliberately left to the theme");
         });
     }
 

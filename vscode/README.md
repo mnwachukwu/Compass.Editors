@@ -508,6 +508,7 @@ to, which is what makes a hole look like code.
 The full list, if you want something not above: `comment.line.number-sign`,
 `string.quoted.double`, `string.quoted.single`, `constant.character.escape`,
 `invalid.illegal.unknown-escape`, `constant.numeric.integer`, `constant.numeric.real`,
+`constant.numeric.float`, `constant.numeric.fraction`,
 `keyword.other.declaration`, `keyword.operator.comparison`, `keyword.operator.assignment`,
 `keyword.operator.arithmetic`, `keyword.operator.optional` — each with `.profi-c` on the end.
 
