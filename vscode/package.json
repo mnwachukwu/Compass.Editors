@@ -2,7 +2,7 @@
   "name": "profi-c",
   "displayName": "Profi-C",
   "description": "Syntax highlighting and debugging for Profi-C.",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "publisher": "profi-c",
   "license": "MIT",
   "engines": {
@@ -90,6 +90,16 @@
       {
         "command": "profi-c.useTheColors",
         "title": "Use the Profi-C colors",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.restartTheServer",
+        "title": "Restart the language server",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.stopTheServer",
+        "title": "Stop the language server",
         "category": "Profi-C"
       }
     ],

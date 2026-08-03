@@ -57,6 +57,15 @@ let collected;
 let client;
 
 /**
+ * What VS Code handed to `activate`, kept so the server can be started again later.
+ *
+ * The server is started once at activation and again whenever somebody restarts it — and the
+ * only thing starting it needs the context for is registering the outline that stands in when no
+ * server is there. Holding it here is what lets a command start one without being handed it.
+ */
+let activation;
+
+/**
  * The collection a refused run writes into, made the first time there is something to write.
  *
  * Made on demand rather than at activation so that the function that writes to it is the one
@@ -68,6 +77,8 @@ function problemsPanel() {
 }
 
 function activate(context) {
+    activation = context;
+
     context.subscriptions.push(
         problemsPanel(),
         vscode.debug.registerDebugConfigurationProvider(DebuggerType, {
@@ -92,6 +103,8 @@ function activate(context) {
         vscode.commands.registerCommand('profi-c.buildProject', file => build(file, TheProject)),
         vscode.commands.registerCommand('profi-c.chooseTarget', chooseTarget),
         vscode.commands.registerCommand('profi-c.useTheColors', useTheColors),
+        vscode.commands.registerCommand('profi-c.stopTheServer', stopTheServer),
+        vscode.commands.registerCommand('profi-c.restartTheServer', restartTheServer),
 
         // Offered to tasks.json as well, so a project can pin a build the way it likes and
         // Ctrl+Shift+B finds one without anybody writing the command line out.
@@ -146,6 +159,48 @@ function startTheServer(context) {
         client = undefined;
         context.subscriptions.push(outlineWithoutAServer());
     });
+}
+
+/**
+ * Stops the server, letting go of the compiler it is running.
+ *
+ * **This exists because a running server holds the file open.** On Windows a process cannot be
+ * overwritten while it runs, so publishing a new `pc` over the one the server is using fails —
+ * and the only way out was to close the editor, which is a poor answer for anyone working on the
+ * compiler itself. Stop, publish, restart.
+ *
+ * Says what happened either way. A command that appears to do nothing is one somebody runs twice
+ * and then stops trusting.
+ */
+async function stopTheServer() {
+    if (!client) {
+        vscode.window.showInformationMessage('Profi-C: the language server is not running.');
+        return;
+    }
+
+    await client.stop();
+    client = undefined;
+
+    vscode.window.showInformationMessage(
+        'Profi-C: the language server has stopped. The compiler can now be replaced.');
+}
+
+/**
+ * Stops the server if it is running and starts it again, on whatever `pc` is there now.
+ *
+ * Started fresh rather than through the client's own restart, so that a compiler replaced since
+ * the last start is the one that runs — and so that this works when nothing is running, which is
+ * what somebody who has just stopped it wants.
+ */
+async function restartTheServer() {
+    if (client) {
+        await client.stop();
+        client = undefined;
+    }
+
+    startTheServer(activation);
+
+    vscode.window.showInformationMessage('Profi-C: the language server has restarted.');
 }
 
 /**

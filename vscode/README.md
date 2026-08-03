@@ -277,9 +277,10 @@ things follow that a grammar could never have done:
 - **A parameter looks like a parameter everywhere**, not only in the signature. The grammar
   colored the name in `function Length(string word)` because of where it sat on the line and gave
   up on `word` in the body. That was always the half you spend your time reading.
-- **A local gets a color of its own** — the light mint. Worth it here for a reason peculiar to
-  this language: a field is written through `this.` and a shared member through a type name, so
-  both announce themselves before you reach the name. A local carries no marker at all.
+- **A local is colored like a field**, because a name that holds a value is the useful thing to
+  see. Telling the two apart is already the language's job — a field is written through `this.`
+  and a shared one through a type name, so what kind of thing it is has been said before the name
+  arrives, and a second color would say it twice.
 
 You also get `constant` rendered as read-only and `shared` as static without anybody picking a
 color, because the server describes a name in the protocol's own vocabulary and most themes
@@ -310,6 +311,21 @@ first thing typed on a great many lines.
 A scope is a stretch of the file rather than a piece of syntax, which is why this still works on
 the line you are in the middle of typing — the half-written line does not have to parse for the
 names around it to be known.
+
+### Replacing the compiler while the editor is open
+
+**`Profi-C: Stop the language server`** and **`Profi-C: Restart the language server`**.
+
+You need the first one if you are working on the compiler itself. The server is a running copy of
+`pc`, and a running program cannot be overwritten on Windows — so publishing a new one over it
+fails, and the only way out used to be closing the editor. Stop it, publish, then restart:
+
+```bash
+dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist
+```
+
+Restarting also starts one that is not running, which is what you want after stopping. Both say
+what happened, because a command that appears to do nothing gets run twice and then distrusted.
 
 A compiler too old to know the command has no server to connect to, and nothing says so: the
 highlighting is declarative, and running and building are their own commands. The outline falls

@@ -16,7 +16,7 @@
 
   "surroundingPairs": [["{", "}"], ["[", "]"], ["(", ")"], ["\"", "\""], ["'", "'"]],
 
-  "wordPattern": "(@?[\\p{L}_][\\p{L}\\p{Nd}_]*)",
+  "wordPattern": "(@?[^\\s`~!@#%^&*()\\-=+\\[{\\]}\\\\|;:'\",.<>/?]+)",
 
   "indentationRules": {
     "increaseIndentPattern": "^\\s*(namespace|model|structure|enumeration|function|if|else|while|for|switch|try|catch|finally|begin|case|default)\\b(?!.*\\bend\\b).*$",

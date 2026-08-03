@@ -201,14 +201,18 @@ const semanticRules = {
     // look identical because they are the same thing.
     parameter: '#D0BFFF',
 
-    // A local. The light mint — read as a value rather than as a structure, and the one color in
-    // that range nothing else here spends.
+    // A local and a field, in one color.
     //
-    // Worth a color of its own for a reason peculiar to this language. A field is reached through
-    // 'this.' and a shared member through a type name, so both announce themselves before you get
-    // to the name. A local in a function body carries no marker at all, and is the name a reader
-    // meets most often.
-    variable: '#B5CEA8',
+    // The distinction between them is already carried by the language rather than by a palette: a
+    // field is written through 'this.' and a shared one through a type name, so what kind of thing
+    // it is has been said before the name arrives. Coloring the two apart says it a second time,
+    // and spends a color to do it.
+    //
+    // What the color is for is the difference a reader cannot see otherwise — a name that holds a
+    // value, against a type, a function, or a parameter. That difference is what these three lines
+    // draw, and there is nothing left for a fourth to say.
+    variable: '#9CDCFE',
+    property: '#9CDCFE',
 
     // A type a program declared, matching what the grammar already gives one. Repeated rather
     // than left out: a semantic token wins where both apply, so saying nothing here would take
@@ -222,9 +226,8 @@ const semanticRules = {
     function: '#DCDCAA',
     method: '#DCDCAA',
 
-    // A field and a member of an enumeration. Both are always written after something already
-    // colored — 'this.', a type name — so they follow the value colors rather than the type ones.
-    property: '#9CDCFE',
+    // A member of an enumeration, which is a value and reads as one, but a fixed one — so it sits
+    // near the names that hold values without being mistaken for one.
     enumMember: '#4FC1FF',
 };
 
