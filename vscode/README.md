@@ -178,6 +178,11 @@ runs**, and the chevron beside it lists the two ways:
 Both debug. There is one adapter and it always stops where breakpoints are set — what differs is
 only what gets compiled. Whichever you pick last becomes what a single click does next time.
 
+**A program that will not compile does not start, and says why in the Problems panel** — the
+same place a build puts them, clickable to the line, and the panel is opened for you. Warnings
+and opinions appear there too and stop nothing: the compiler runs a program that has them, so an
+editor that refused to would be answering a different question than the compiler does.
+
 **🔨 Build** sits immediately to its right:
 
 | | |
@@ -232,7 +237,7 @@ you can run without naming `dotnet`. It runs as a **task**, so the output goes t
 the form every .NET tool already reads:
 
 ```
-storefront/Program.pc(19,1): error PC0501: The model 'Book' cannot be compiled to an assembly yet.
+storefront/Program.pc(19,26): error PC0300: A string cannot be added to an integer.
 ```
 
 Three severities are matched separately — `error` and `warning` as themselves, and **`opinion`
@@ -257,9 +262,8 @@ win-arm, win-arm64, win-x64, win-x86. 'dotnet publish -r freebsd-x64' on any
 project fetches what is needed.
 ```
 
-**The emitter is unfinished**, so most programs are still refused with `PC0501` naming the
-construct. That is worth knowing before you press the button: the Problems panel is currently a
-good picture of what the back end has left to do.
+Every program that checks is a program that builds, so a failed build is a mistake in the
+program rather than a construct the back end has not reached.
 
 ### Without a launch.json
 
@@ -316,8 +320,9 @@ of these:
 1. **`pc` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
    it was launched, which on Windows may predate a `dotnet tool install`. Restarting the editor
    is usually enough; naming the full path in `profi-c.compilerPath` always is.
-2. **The program does not compile.** A launch that will not build is refused with the
-   diagnostics in the message, rather than starting and dying — so read the notification.
+2. **The program does not compile.** Nothing starts, and the reasons are in the Problems panel
+   rather than in a dialog — the panel is opened for you, and each entry clicks through to the
+   line.
 3. **The manifest is stale in the editor.** See the version note above; a `package.json` change
    without a bump goes on serving what was recorded at the scan.
 4. **`extension.js` did not load.** Nothing says so in the editor; the debugger is simply absent

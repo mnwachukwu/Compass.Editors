@@ -37,8 +37,31 @@ const DefaultCompiler = 'pc';
 /** The languages a debug session may be started from. A project file is launchable too. */
 const Debuggable = ['profi-c', 'profi-c-project'];
 
+/**
+ * How the compiler writes every diagnostic: MSBuild's canonical form.
+ *
+ * The same shape the problem matchers in package.json read, and deliberately the same — a build
+ * and a run disagreeing about how to read one message would be two parsers to keep true.
+ */
+const Diagnostic = /^(.*)\((\d+),(\d+)\): (error|warning|opinion) (PC\d+): (.*)$/;
+
+/** Where a refused run puts what the compiler said. See {@link problemsPanel}. */
+let collected;
+
+/**
+ * The collection a refused run writes into, made the first time there is something to write.
+ *
+ * Made on demand rather than at activation so that the function that writes to it is the one
+ * that makes it, and nothing depends on the order the two happened in.
+ */
+function problemsPanel() {
+    collected ??= vscode.languages.createDiagnosticCollection('profi-c');
+    return collected;
+}
+
 function activate(context) {
     context.subscriptions.push(
+        problemsPanel(),
         vscode.debug.registerDebugConfigurationProvider(DebuggerType, {
             resolveDebugConfiguration: debugWhatIsOpenWhereNothingSaysOtherwise,
         }),
@@ -248,6 +271,14 @@ async function start(file, scope) {
         return;
     }
 
+    if (!showProblems(checked(document.fsPath, scope))) {
+        // Refused, and the reasons are in the Problems panel where every other language puts
+        // them. Starting the session anyway would have the adapter refuse it a second time and
+        // pile the same list into a dialog.
+        await vscode.commands.executeCommand('workbench.actions.view.problems');
+        return;
+    }
+
     await vscode.debug.startDebugging(vscode.workspace.getWorkspaceFolder(document), {
         type: DebuggerType,
         request: 'launch',
@@ -280,6 +311,120 @@ async function build(file, scope) {
         : document.fsPath;
 
     await vscode.tasks.executeTask(buildTask(program, scope, target()));
+}
+
+/**
+ * Asks the compiler to check what is about to be run, and gives back what it said.
+ *
+ * Run before the debug session rather than after, because the adapter's own refusal arrives as a
+ * failed launch and an editor has one way to show that: a dialog. The compiler already writes
+ * diagnostics in the form the problem matchers read, so asking here costs one process and puts
+ * them where a reader looks for them.
+ *
+ * The same program the session would debug, chosen the same way, so a run that is refused and a
+ * run that is not are refused about the same files.
+ */
+function checked(program, scope) {
+    const target = scope === TheProject
+        ? withTheProjectInstead({ program, scope }).program
+        : program;
+
+    const asked = require('child_process').spawnSync(compiler(), ['check', target], {
+        encoding: 'utf8',
+        timeout: 60000,
+        windowsHide: true,
+    });
+
+    // A compiler that will not start is not a program with mistakes in it. Nothing is reported
+    // here, and the debug session goes ahead so that the editor says what it always says about a
+    // debugger it could not launch.
+    if (asked.error) {
+        return undefined;
+    }
+
+    return readDiagnostics(`${asked.stderr || ''}`);
+}
+
+/**
+ * Every diagnostic in a run of compiler output, as the pieces a Problems entry is made of.
+ *
+ * Anything that does not match is dropped rather than shown as a mysterious entry with no
+ * position: the compiler writes summaries on the same stream, and "ok, 1 file, 1 type" is not
+ * something to put in a panel of problems.
+ */
+function readDiagnostics(output) {
+    return output
+        .split(/\r?\n/)
+        .map(line => Diagnostic.exec(line))
+        .filter(Boolean)
+        .map(([, file, line, column, severity, code, message]) => ({
+            file,
+            line: Number(line),
+            column: Number(column),
+            severity,
+            code,
+            message,
+        }));
+}
+
+/**
+ * Puts what the compiler said in the Problems panel, and answers whether the run may go ahead.
+ *
+ * Warnings and opinions are shown as well as errors, and do not stop anything — the compiler
+ * runs a program that has them, so an editor that refused to would be answering a different
+ * question than the compiler does.
+ *
+ * Given nothing at all, the panel is left exactly as it was. That is the case where the compiler
+ * could not be asked, and clearing on the way past would erase a real answer from a moment ago.
+ */
+function showProblems(found) {
+    if (!found) {
+        return true;
+    }
+
+    problemsPanel().clear();
+
+    // Gathered by file before being set, because a collection is written a file at a time and
+    // setting one twice replaces what was there rather than adding to it. A compilation reports
+    // across several files, so the second file's entries would take the first file's place.
+    const byFile = new Map();
+
+    for (const one of found) {
+        const uri = vscode.Uri.file(one.file);
+        const gathered = byFile.get(uri.toString()) || { uri, entries: [] };
+
+        // Positions are one-based in a diagnostic and zero-based in the editor.
+        const at = new vscode.Position(Math.max(0, one.line - 1), Math.max(0, one.column - 1));
+
+        const entry = new vscode.Diagnostic(
+            new vscode.Range(at, at), one.message, severityOf(one.severity));
+
+        entry.source = 'profi-c';
+        entry.code = one.code;
+
+        gathered.entries.push(entry);
+        byFile.set(uri.toString(), gathered);
+    }
+
+    for (const { uri, entries } of byFile.values()) {
+        problemsPanel().set(uri, entries);
+    }
+
+    return !found.some(one => one.severity === 'error');
+}
+
+/** The editor's severity for one of the language's three. */
+function severityOf(severity) {
+    if (severity === 'error') {
+        return vscode.DiagnosticSeverity.Error;
+    }
+
+    // An opinion is not a warning: it says a program does what its author meant and says it in a
+    // way the language would rather it were not. Information is the nearest thing the editor has
+    // that does not read as "something may be wrong".
+    return severity === 'warning'
+        ? vscode.DiagnosticSeverity.Warning
+        : vscode.DiagnosticSeverity.Information;
 }
 
 /** The two builds offered to tasks.json and to Ctrl+Shift+B. */
