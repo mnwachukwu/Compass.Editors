@@ -321,6 +321,10 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// at the manifest, sees the right value, and believes it.</para>
     /// <para>What a reader sees is the scope the grammar chooses and whatever their settings
     /// or theme paint it. The extension's README carries the block to paste.</para>
+    /// <para><c>configurationDefaults</c> itself is allowed, and is used — a default is the right
+    /// way to turn on a behavior this language wants and the editor cannot guess. Only color is
+    /// refused, so the claim is about which keys are set rather than about the section being
+    /// absent.</para>
     /// </summary>
     [Test]
     public void TheExtensionContributesNoColors()
@@ -329,11 +333,42 @@ public sealed class EditorGrammarTests : EditorTestBase
             File.ReadAllText(Path.Combine(
                 Extension, "package.json")));
 
+        if (!manifest.RootElement.GetProperty("contributes")
+                     .TryGetProperty("configurationDefaults", out JsonElement defaults))
+        {
+            Assert.Pass("the manifest sets no defaults at all");
+        }
+
         Assert.That(
-            manifest.RootElement.GetProperty("contributes")
-                    .TryGetProperty("configurationDefaults", out _),
-            Is.False,
+            Painting(defaults),
+            Is.Empty,
             "an extension cannot set token colors; saying it does misleads");
+    }
+
+    /// <summary>
+    /// Every default whose name is about color, however deeply it sits. Found by walking rather
+    /// than by listing the spellings known today, so that a third cannot arrive unnoticed.
+    /// </summary>
+    private static IEnumerable<string> Painting(JsonElement element)
+    {
+        if (element.ValueKind != JsonValueKind.Object)
+        {
+            yield break;
+        }
+
+        foreach (JsonProperty property in element.EnumerateObject())
+        {
+            if (property.Name.Contains("color", StringComparison.OrdinalIgnoreCase)
+                || property.Name.Contains("token", StringComparison.OrdinalIgnoreCase))
+            {
+                yield return property.Name;
+            }
+
+            foreach (string deeper in Painting(property.Value))
+            {
+                yield return deeper;
+            }
+        }
     }
 
     /// <summary>

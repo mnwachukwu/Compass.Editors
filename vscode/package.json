@@ -24,6 +24,11 @@
     "onLanguage:profi-c-project"
   ],
   "contributes": {
+    "configurationDefaults": {
+      "[profi-c]": {
+        "editor.formatOnType": true
+      }
+    },
     "languages": [
       {
         "id": "profi-c",
