@@ -150,4 +150,31 @@ public sealed class TokenizationTests : EditorTestBase
             Assert.That(Carried(scanned, "Account"), Does.Contain("entity.name.type.profi-c"));
         });
     }
+
+    // ---- The shape a hover shows -------------------------------------------------------------
+
+    /// <summary>
+    /// <para>A declaration with nothing after it still colors its type.</para>
+    /// <para><b>Not a shape a program contains, and the shape every hover has.</b> The language
+    /// server answers what is under the pointer as a fragment — <c>Animal frank</c>, with no
+    /// <c>;</c> and no <c>=</c> — and a hover's code block is colored by this grammar and by
+    /// nothing else. A rule that waited for a terminator left every declared type in every hover
+    /// the same color as the prose around it, while <c>integer counted</c> beside it lit, because
+    /// <c>integer</c> is a word this grammar knows and <c>Animal</c> is not.</para>
+    /// </summary>
+    [TestCase("Animal frank", "Animal")]
+    [TestCase("Animal[] pets", "Animal")]
+    [TestCase("Suit? played", "Suit")]
+    [TestCase("Shapes.Circle flat", "Circle")]
+    public void ADeclarationWithNothingAfterItStillColorsItsType(string line, string type) =>
+        Assert.That(Carried(Scopes(line), type), Does.Contain("entity.name.type.profi-c"));
+
+    /// <summary>
+    /// And a line that merely looks like one does not. The rule reaches the end of a line now, so
+    /// what keeps it honest is every other thing it demands of the shape.
+    /// </summary>
+    [TestCase("loop each grade in grades", "grade")]
+    [TestCase("yield total", "total")]
+    public void SomethingThatIsNotADeclarationIsNotColoredAsOne(string line, string word) =>
+        Assert.That(Carried(Scopes(line), word), Does.Not.Contain("entity.name.type.profi-c"));
 }

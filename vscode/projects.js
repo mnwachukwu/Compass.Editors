@@ -18,6 +18,18 @@
 const path = require('path');
 
 /**
+ * A line to put into a file, ending the way that file's other lines end.
+ *
+ * **Splitting on `\n` leaves the `\r` of a CRLF file on the end of every line**, which is what
+ * keeps the untouched ones exactly as they were. A line inserted without one is then the only
+ * LF line in the file — mixed endings written into somebody's project by a command they ran to
+ * add a file, and shown as a whole-file change by whatever they use to review it.
+ */
+function lineIn(text, written) {
+    return text.includes('\r\n') ? `${written}\r` : written;
+}
+
+/**
  * The line a project ends with, which is what every insertion goes in front of.
  *
  * Found from the bottom, so a project whose text is malformed above still takes an edit in the
@@ -81,7 +93,7 @@ function withSource(text, projectPath, filePath) {
         }
     }
 
-    lines.splice(at, 0, `${indentOf(lines)}source ${relative}`);
+    lines.splice(at, 0, lineIn(text, `${indentOf(lines)}source ${relative}`));
 
     return lines.join('\n');
 }
@@ -109,7 +121,7 @@ function withoutSource(text, projectPath, filePath) {
  */
 function withEntry(text, type) {
     const lines = text.split('\n');
-    const written = `${indentOf(lines)}entry ${type}`;
+    const written = lineIn(text, `${indentOf(lines)}entry ${type}`);
     const at = lines.findIndex(line => /^\s*entry\b/.test(line));
 
     if (at >= 0) {

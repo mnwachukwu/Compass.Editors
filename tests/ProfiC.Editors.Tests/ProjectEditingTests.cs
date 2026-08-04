@@ -173,6 +173,47 @@ public sealed class ProjectEditingTests : EditorTestBase
             Is.Null);
     }
 
+    /// <summary>
+    /// <para>A line put into a file ends the way that file's other lines end.</para>
+    /// <para><b>Found by CI on Windows and not here</b>, because the expected text in a test is
+    /// whatever the checkout wrote — so the same assertion reads LF on one machine and CRLF on
+    /// another, and only the second one is wrong. The fault was real either way: splitting on
+    /// <c>\n</c> leaves the <c>\r</c> of a CRLF file on every line, which is what keeps the
+    /// untouched ones untouched, and a line inserted without one is then the only LF line in the
+    /// file — mixed endings written into somebody's project by a command they ran to add a file,
+    /// and shown as a whole-file change by whatever they review it with.</para>
+    /// <para>Written with the endings spelled out rather than taken from this file, so it asserts
+    /// the same thing wherever it runs.</para>
+    /// </summary>
+    [Test]
+    public void ALineEndsTheWayTheFileAlreadyDoes()
+    {
+        const string Windows = "project Storefront\r\n    source Program.pc\r\nend project\r\n";
+        const string Unix = "project Storefront\n    source Program.pc\nend project\n";
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                Written(new Edit("add", Windows, Project, Inside("Shelf.pc"), null)),
+                Is.EqualTo(
+                    "project Storefront\r\n    source Program.pc\r\n    source Shelf.pc\r\n"
+                    + "end project\r\n"));
+
+            Assert.That(
+                Written(new Edit("add", Unix, Project, Inside("Shelf.pc"), null)),
+                Is.EqualTo(
+                    "project Storefront\n    source Program.pc\n    source Shelf.pc\nend project\n"));
+
+            // Whole, not "contains": every CRLF holds an LF, so asking for the absence of one
+            // finds it in the very ending that is correct.
+            Assert.That(
+                Written(new Edit("entry", Windows, Project, null, "Shop.Program")),
+                Is.EqualTo(
+                    "project Storefront\r\n    entry Shop.Program\r\n    source Program.pc\r\n"
+                    + "end project\r\n"));
+        });
+    }
+
     // ---- Where a project starts ---------------------------------------------------------------
 
     /// <summary>An entry point that is already written is replaced where it stands.</summary>
