@@ -64,9 +64,13 @@ const source = fs.readFileSync(extension, 'utf8')
                 }),
             },
         };`)
+    // Beside the extension rather than beside this, since `require` here resolves from tools/.
     .replace(
         "const palette = require('./palette');",
-        `const palette = require(${JSON.stringify(path.join(__dirname, '..', 'palette.js'))});`);
+        `const palette = require(${JSON.stringify(path.join(__dirname, '..', 'palette.js'))});`)
+    .replace(
+        "const projects = require('./projects');",
+        `const projects = require(${JSON.stringify(path.join(__dirname, '..', 'projects.js'))});`);
 
 // Nothing is activated. The extension makes its collection the first time it writes to one, so
 // the two functions below are reachable without registering commands, providers and a debugger

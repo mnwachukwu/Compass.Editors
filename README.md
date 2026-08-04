@@ -60,15 +60,25 @@ by scanning lines for the word `source` looks right and is not: it counts a `sou
 would then compile and run a program the reader was not looking at — and look exactly like the
 button working, which is the failure this whole arrangement exists to prevent.
 
-**`extension.js` now touches no files at all.** Every question with a Profi-C answer leaves the
-process, and what is left here is where things go in the editor.
+**One thing here writes a format the compiler owns, and it is worth naming rather than glossing
+over.** The project commands put a `source` line into a `.pcp`, take one out, and replace an
+`entry` — so [projects.js](vscode/projects.js) is the only file in this repository that composes
+Profi-C's own syntax.
+
+Three things keep it from being the second reader everything above refuses. **Nothing is read to
+decide anything** — which project claims a file is still `pc project`, and what a file declares is
+still `pc outline`. **Nothing is rewritten wholesale**: a source goes in before `end project`, a
+source comes out by the line naming it, and a line the editing does not recognize is left exactly
+as it was, so a format that gains a word gains it here for free. And **the language server
+validates the result**, so an edit that lands wrong is in the Problems panel before the reader has
+looked away.
+
+Anything needing more understanding of the format than that belongs in `pc` instead.
 
 ## What is planned
 
-Roughly in the order it is wanted:
-
-1. **Project management** — commands for creating a `.pcp`, adding and removing files, setting
-   the entry point, and running or cleaning without leaving the editor.
+Nothing large. The debugger, the language server and project management are all in; what is left
+is the ordinary business of using it and fixing what that turns up.
 
 **The language server itself is done** — live diagnostics as you type, hover types, go to
 definition, completion both after a dot and for a bare name, signature help, quick fixes, rename,

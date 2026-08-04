@@ -83,6 +83,26 @@
         "category": "Profi-C"
       },
       {
+        "command": "profi-c.newProject",
+        "title": "New project",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.addToProject",
+        "title": "Add this file to a project",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.removeFromProject",
+        "title": "Remove this file from its project",
+        "category": "Profi-C"
+      },
+      {
+        "command": "profi-c.setEntryPoint",
+        "title": "Start the project at this file",
+        "category": "Profi-C"
+      },
+      {
         "command": "profi-c.chooseTarget",
         "title": "Choose the target platform",
         "category": "Profi-C"
@@ -145,6 +165,23 @@
           "group": "2_where@1"
         }
       ],
+      "explorer/context": [
+        {
+          "command": "profi-c.addToProject",
+          "group": "profi-c@1",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.removeFromProject",
+          "group": "profi-c@2",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.setEntryPoint",
+          "group": "profi-c@3",
+          "when": "resourceLangId == profi-c"
+        }
+      ],
       "commandPalette": [
         {
           "command": "profi-c.runFile",
@@ -153,6 +190,18 @@
         {
           "command": "profi-c.runProject",
           "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        },
+        {
+          "command": "profi-c.addToProject",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.removeFromProject",
+          "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.setEntryPoint",
+          "when": "resourceLangId == profi-c"
         }
       ]
     },
@@ -337,8 +386,8 @@
         },
         "profi-c.inlayHints.types": {
           "type": "boolean",
-          "default": true,
-          "description": "Write in the type of a name the program gave none: a 'let', and the binding of each kind of loop. These are the only places in Profi-C where a type is not written down, so the hint fills the page in rather than annotating it."
+          "default": false,
+          "description": "Write in the type of a name the program gave none: a 'let', and the binding of each kind of loop. These are the only places in Profi-C where a type is not written down. Off by default, because a hint is text the editor writes into code nobody wrote — worth turning on while learning what the checker concludes from an initializer."
         },
         "profi-c.inlayHints.parameterNames": {
           "type": "boolean",

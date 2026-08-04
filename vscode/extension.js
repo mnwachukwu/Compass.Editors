@@ -15,6 +15,7 @@
 
 const vscode = require('vscode');
 const palette = require('./palette');
+const projects = require('./projects');
 
 /**
  * The debugger's type.
@@ -101,6 +102,10 @@ function activate(context) {
         vscode.commands.registerCommand('profi-c.runProject', file => start(file, TheProject)),
         vscode.commands.registerCommand('profi-c.buildFile', file => build(file, ThisFile)),
         vscode.commands.registerCommand('profi-c.buildProject', file => build(file, TheProject)),
+        vscode.commands.registerCommand('profi-c.newProject', newProject),
+        vscode.commands.registerCommand('profi-c.addToProject', file => listFile(file, true)),
+        vscode.commands.registerCommand('profi-c.removeFromProject', file => listFile(file, false)),
+        vscode.commands.registerCommand('profi-c.setEntryPoint', setEntryPoint),
         vscode.commands.registerCommand('profi-c.chooseTarget', chooseTarget),
         vscode.commands.registerCommand('profi-c.useTheColors', useTheColors),
         vscode.commands.registerCommand('profi-c.stopTheServer', stopTheServer),
@@ -915,6 +920,263 @@ function withTheProjectInstead(configuration) {
     }
 
     return configuration;
+}
+
+// ---- Working on a project --------------------------------------------------------------------
+
+/**
+ * Starts a project, by asking the compiler for one.
+ *
+ * `pc new --project` already writes a folder holding a `.pcp` and the program it builds, and it
+ * already refuses to write over anything. Writing a second copy of that here would be a second
+ * answer to what a new project looks like, and the two would drift the first time the format
+ * gained a word.
+ */
+async function newProject() {
+    const folder = vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0];
+
+    if (!folder) {
+        vscode.window.showInformationMessage(
+            'Profi-C: open a folder first — a new project is written into one.');
+
+        return;
+    }
+
+    const name = await vscode.window.showInputBox({
+        prompt: 'Name for the project',
+        placeHolder: 'storefront',
+        validateInput: written => /^[A-Za-z0-9_]+$/.test(written)
+            ? undefined
+            : 'Letters, digits and underscores.',
+    });
+
+    if (!name) {
+        return;
+    }
+
+    const made = require('child_process').spawnSync(
+        compiler(),
+        ['new', name, '--project'],
+        { cwd: folder.uri.fsPath, encoding: 'utf8', timeout: 15000, windowsHide: true });
+
+    if (made.error || made.status !== 0) {
+        vscode.window.showErrorMessage(
+            `Profi-C: ${(made.stderr || '').trim() || whyItCannotDebug(compiler())}`);
+
+        return;
+    }
+
+    const project = vscode.Uri.joinPath(folder.uri, name, `${name}.pcp`);
+
+    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(project));
+}
+
+/**
+ * Adds the file to the project that would build it, or takes it out again.
+ *
+ * **Which project is the compiler's answer where there is one**, so adding a file already listed
+ * says so rather than listing it twice. Where nothing claims it — which is the ordinary case for
+ * a file somebody has just made, and the reason this command exists — the projects in the folder
+ * are offered instead, and only the ones that could list it: a `.pcp` names what it builds by a
+ * path relative to itself, so one sitting elsewhere cannot.
+ */
+async function listFile(file, adding) {
+    const path = require('path');
+    const document = fileInFront(file);
+
+    if (!document || !document.fsPath.endsWith('.pc')) {
+        vscode.window.showInformationMessage('Profi-C: open a .pc file to add it to a project.');
+        return;
+    }
+
+    const project = adding
+        ? await projectToListIn(document.fsPath)
+        : projectClaiming(document.fsPath).project;
+
+    if (!project) {
+        vscode.window.showInformationMessage(
+            adding
+                ? 'Profi-C: no project here could list this file.'
+                : 'Profi-C: no project lists this file.');
+
+        return;
+    }
+
+    const opened = await vscode.workspace.openTextDocument(vscode.Uri.file(project));
+    const text = opened.getText();
+
+    const written = adding
+        ? projects.withSource(text, project, document.fsPath)
+        : projects.withoutSource(text, project, document.fsPath);
+
+    if (written === null) {
+        // Listed already, or listed by a folder rather than by name. Either way the file is
+        // built, and rewriting the folder line to take one file out of it would change what the
+        // project builds far beyond what was asked.
+        vscode.window.showInformationMessage(
+            adding
+                ? `Profi-C: ${path.basename(project)} already lists this file.`
+                : `Profi-C: ${path.basename(project)} does not name this file — a folder it lists`
+                  + ' brings it in.');
+
+        return;
+    }
+
+    await write(opened, written);
+
+    vscode.window.showInformationMessage(
+        `Profi-C: ${adding ? 'added to' : 'removed from'} ${path.basename(project)}.`);
+}
+
+/**
+ * Makes the file in front of the reader the one its project starts at.
+ *
+ * The type rather than the file, because that is what `entry` names: two files may each declare a
+ * `Program` and namespaces are what tell them apart. Asked of `pc outline`, which reports what a
+ * file declares — so the name written is the one the compiler will look for.
+ */
+async function setEntryPoint(file) {
+    const path = require('path');
+    const document = fileInFront(file);
+
+    if (!document || !document.fsPath.endsWith('.pc')) {
+        vscode.window.showInformationMessage(
+            'Profi-C: open the .pc file whose program should start the project.');
+
+        return;
+    }
+
+    const project = projectClaiming(document.fsPath).project;
+
+    if (!project) {
+        vscode.window.showInformationMessage(
+            'Profi-C: no project lists this file, so nothing starts at it.');
+
+        return;
+    }
+
+    const program = programIn(document.fsPath);
+
+    if (!program) {
+        vscode.window.showInformationMessage(
+            'Profi-C: this file declares no Program, so a project cannot start at it.');
+
+        return;
+    }
+
+    const opened = await vscode.workspace.openTextDocument(vscode.Uri.file(project));
+    const written = projects.withEntry(opened.getText(), program);
+
+    if (written === null) {
+        vscode.window.showErrorMessage(
+            `Profi-C: ${path.basename(project)} has no 'end project' to write before.`);
+
+        return;
+    }
+
+    await write(opened, written);
+
+    vscode.window.showInformationMessage(
+        `Profi-C: ${path.basename(project)} now starts at ${program}.`);
+}
+
+/** The document a command was invoked on, whether from a menu or from the editor. */
+function fileInFront(file) {
+    return file instanceof vscode.Uri
+        ? file
+        : vscode.window.activeTextEditor && vscode.window.activeTextEditor.document.uri;
+}
+
+/** Replaces a document's text and saves it, so the edit is undoable like any other. */
+async function write(document, text) {
+    const edit = new vscode.WorkspaceEdit();
+
+    edit.replace(
+        document.uri,
+        new vscode.Range(
+            document.positionAt(0), document.positionAt(document.getText().length)),
+        text);
+
+    await vscode.workspace.applyEdit(edit);
+    await document.save();
+}
+
+/**
+ * The project to list a file in: the one that already claims it, or a choice among those that
+ * could. Only projects the file sits under are offered, since that is as far as a path may reach.
+ */
+async function projectToListIn(filePath) {
+    const claiming = projectClaiming(filePath).project;
+
+    if (claiming) {
+        return claiming;
+    }
+
+    const found = (await vscode.workspace.findFiles('**/*.pcp', '**/node_modules/**'))
+        .map(uri => uri.fsPath)
+        .filter(project => projects.within(project, filePath));
+
+    if (found.length <= 1) {
+        return found[0];
+    }
+
+    // The nearest first, which is the one a reader means when there are several.
+    found.sort((left, right) =>
+        projects.relativeTo(left, filePath).length - projects.relativeTo(right, filePath).length);
+
+    return vscode.window.showQuickPick(found, { placeHolder: 'Which project should list it?' });
+}
+
+/**
+ * The qualified name of the `Program` a file declares, or undefined for a file declaring none.
+ *
+ * Read from `pc outline`, which is the compiler's account of what a file declares. Looking for
+ * the word in the text would find it in a comment and in a string, and would miss the namespace
+ * that tells one `Program` from another.
+ */
+function programIn(filePath) {
+    const asked = require('child_process').spawnSync(compiler(), ['outline', filePath], {
+        encoding: 'utf8',
+        timeout: 15000,
+        windowsHide: true,
+    });
+
+    if (asked.error || asked.status !== 0) {
+        return undefined;
+    }
+
+    try {
+        return found(JSON.parse(asked.stdout) || [], []);
+    } catch {
+        return undefined;
+    }
+}
+
+/**
+ * The qualified name of a `Program` somewhere in an outline, or undefined where there is none.
+ *
+ * Walked rather than read off the top, because a namespace is an entry with the declarations
+ * inside it — so a file that opens with one has its models a level down, and the namespaces on
+ * the way are exactly what a qualified name is made of.
+ */
+function found(entries, above) {
+    for (const entry of entries) {
+        if (entry.kind === 'namespace') {
+            const inside = found(entry.children || [], [...above, entry.name]);
+
+            if (inside) {
+                return inside;
+            }
+
+            continue;
+        }
+
+        if (entry.name === 'Program') {
+            return [...above, 'Program'].join('.');
+        }
+    }
+
+    return undefined;
 }
 
 /**
