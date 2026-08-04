@@ -375,6 +375,18 @@ const ThisFile = 'file';
 const TheProject = 'project';
 
 /**
+ * Reveal the Debug Console when a session starts.
+ *
+ * What a program prints is the whole of what most Profi-C programs do, so a run whose output
+ * lands in a panel nobody opened reads as a run that did nothing. Carried on the configuration
+ * rather than set once somewhere, because it belongs to the act of running rather than to the
+ * editor, and a hand-written launch.json inherits it by copying a line it can see.
+ *
+ * It does not fight the Problems panel a refused run opens: that path never starts a session.
+ */
+const ShowTheConsole = 'openOnSessionStart';
+
+/**
  * The configurations offered when there is no launch.json.
  *
  * Named as the editor's own Run button names things, so that somebody arriving from C# reads
@@ -387,6 +399,7 @@ function offerTheUsualWaysToRun() {
             request: 'launch',
             name: 'Run this file',
             program: '${file}',
+            internalConsoleOptions: ShowTheConsole,
         },
         {
             type: DebuggerType,
@@ -394,6 +407,7 @@ function offerTheUsualWaysToRun() {
             name: 'Run project associated with this file',
             program: '${file}',
             scope: TheProject,
+            internalConsoleOptions: ShowTheConsole,
         },
     ];
 }
@@ -429,6 +443,7 @@ async function start(file, scope) {
         name: scope === TheProject ? 'Run project associated with this file' : 'Run this file',
         program: document.fsPath,
         scope,
+        internalConsoleOptions: ShowTheConsole,
     });
 }
 
@@ -877,6 +892,8 @@ function debugWhatIsOpenWhereNothingSaysOtherwise(folder, configuration) {
             // configuration nobody can read, and an unsubstituted variable reaching the
             // compiler reads as a file that does not exist.
             program: open.document.uri.fsPath,
+
+            internalConsoleOptions: ShowTheConsole,
         };
     }
 

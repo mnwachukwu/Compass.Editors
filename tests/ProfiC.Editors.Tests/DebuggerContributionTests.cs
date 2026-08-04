@@ -263,6 +263,54 @@ public sealed class DebuggerContributionTests : EditorTestBase
         });
     }
 
+    /// <summary>
+    /// <para>Every launch this extension offers or starts reveals the Debug Console.</para>
+    /// <para>Printing is the whole of what most Profi-C programs do, so a run whose output lands
+    /// in a panel nobody opened is indistinguishable from a run that did nothing — and the first
+    /// thing a reader concludes is that the language is broken rather than that a panel is
+    /// closed.</para>
+    /// <para>Both halves are held because a launch can be started from either. The manifest's
+    /// offers are what "create a launch.json" writes; the script's are what the Run button
+    /// passes, and one carrying it while the other does not is a Run button that behaves
+    /// differently depending on whether a file nobody looked at exists.</para>
+    /// </summary>
+    [Test]
+    public void EveryLaunchRevealsTheDebugConsole()
+    {
+        string revealing = Declared("ShowTheConsole");
+
+        JsonElement[] offered =
+        [
+            .. Debugger().GetProperty("initialConfigurations").EnumerateArray(),
+            .. Debugger().GetProperty("configurationSnippets")
+                         .EnumerateArray()
+                         .Select(snippet => snippet.GetProperty("body")),
+        ];
+
+        string script = File.ReadAllText(ScriptPath);
+
+        Assert.Multiple(() =>
+        {
+            foreach (JsonElement configuration in offered)
+            {
+                Assert.That(
+                    configuration.TryGetProperty(
+                        "internalConsoleOptions", out JsonElement console)
+                        && console.GetString() == revealing,
+                    Is.True,
+                    $"'{configuration.GetProperty("name").GetString()}' would run with the "
+                    + "console left closed");
+            }
+
+            // The script writes its configurations as object literals rather than as data, so
+            // they are counted rather than read: every launch it builds must carry the line.
+            Assert.That(
+                Regex.Matches(script, @"request:\s*'launch'").Count,
+                Is.EqualTo(Regex.Matches(script, @"internalConsoleOptions:\s*ShowTheConsole").Count),
+                "extension.js builds a launch that leaves the Debug Console closed");
+        });
+    }
+
     // ---- Running without writing a launch.json ----------------------------------------------
 
     /// <summary>

@@ -250,14 +250,16 @@
             "type": "profi-c",
             "request": "launch",
             "name": "Run this file",
-            "program": "${file}"
+            "program": "${file}",
+            "internalConsoleOptions": "openOnSessionStart"
           },
           {
             "type": "profi-c",
             "request": "launch",
             "name": "Run project associated with this file",
             "program": "${file}",
-            "scope": "project"
+            "scope": "project",
+            "internalConsoleOptions": "openOnSessionStart"
           }
         ],
         "configurationSnippets": [
@@ -268,7 +270,8 @@
               "type": "profi-c",
               "request": "launch",
               "name": "Run this file",
-              "program": "^\"\\${file}\""
+              "program": "^\"\\${file}\"",
+              "internalConsoleOptions": "openOnSessionStart"
             }
           },
           {
@@ -279,7 +282,8 @@
               "request": "launch",
               "name": "Run project associated with this file",
               "program": "^\"\\${file}\"",
-              "scope": "project"
+              "scope": "project",
+              "internalConsoleOptions": "openOnSessionStart"
             }
           }
         ]
