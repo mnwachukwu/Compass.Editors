@@ -334,6 +334,16 @@
           "type": "string",
           "default": "pc",
           "description": "The Profi-C compiler to run when debugging. The default finds it on PATH, which is where 'dotnet tool install' puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
+        },
+        "profi-c.inlayHints.types": {
+          "type": "boolean",
+          "default": true,
+          "description": "Write in the type of a name the program gave none: a 'let', and the binding of each kind of loop. These are the only places in Profi-C where a type is not written down, so the hint fills the page in rather than annotating it."
+        },
+        "profi-c.inlayHints.parameterNames": {
+          "type": "boolean",
+          "default": false,
+          "description": "Write the name of the parameter in front of each argument of a call. Off by default: it repeats what hovering the argument already says, and it lands on every argument of every call. Worth turning on while reading unfamiliar code."
         }
       }
     }

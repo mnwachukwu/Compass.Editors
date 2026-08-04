@@ -153,6 +153,12 @@ function startTheServer(context) {
             // Diagnostics for a file arrive against that file, so the panel is grouped the way
             // a reader expects even when the mistake is in something they never opened.
             diagnosticCollectionName: 'profi-c',
+
+            // What the reader asked to be shown, sent at startup and again whenever it changes.
+            // Without the second half, turning a hint off takes effect at the next restart —
+            // which is nowhere, for somebody flipping the switch to see what it does.
+            initializationOptions: { 'profi-c': hintSettings() },
+            synchronize: { configurationSection: 'profi-c' },
         });
 
     client.start().catch(() => {
@@ -748,6 +754,19 @@ async function chooseTarget() {
 /** The compiler to run, which a configuration or a setting may name. */
 function compiler() {
     return vscode.workspace.getConfiguration().get(CompilerPathSetting) || DefaultCompiler;
+}
+
+/**
+ * Which inlay hints the reader has asked for, as the server reads them.
+ *
+ * Read here rather than defaulted here: the defaults live in `contributes.configuration`, which is
+ * what VS Code shows in the settings editor, and a second copy of them in this file would be the
+ * one that quietly won.
+ */
+function hintSettings() {
+    const asked = vscode.workspace.getConfiguration('profi-c.inlayHints');
+
+    return { inlayHints: { types: asked.get('types'), parameterNames: asked.get('parameterNames') } };
 }
 
 /**
