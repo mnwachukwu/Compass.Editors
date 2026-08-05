@@ -193,20 +193,6 @@ public sealed class EditorGrammarTests : EditorTestBase
             "reserved words the editor grammar does not color"));
     }
 
-    /// <summary>
-    /// <para>What a mismatch is being measured against, said out loud.</para>
-    /// <para><b>These three compare two repositories, so a failure has two explanations and only
-    /// one of them is a fault here.</b> The vocabulary comes from a sibling checkout, and in CI
-    /// that checkout is of Profi-C's default branch at the moment this job started — so a commit
-    /// here that lands minutes before the language change it goes with reads a vocabulary from
-    /// before it. That happened with <c>float</c>: the grammar was right, the word was reserved,
-    /// and the run still failed. Naming the count turns the same failure into one a reader can
-    /// tell apart at a glance, since a stale sibling is short by exactly the words it has not
-    /// heard of.</para>
-    /// </summary>
-    private static string Against(int words, string what) =>
-        $"{what} (read against a vocabulary of {words} reserved words — if that number looks "
-        + "low, the Profi-C checkout beside this one is older than the change being tested)";
 
     /// <summary>
     /// And every type the language provides, which the scanner reads as an ordinary name and

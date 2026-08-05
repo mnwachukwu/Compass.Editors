@@ -19,8 +19,8 @@
   "wordPattern": "(@?[^\\s`~!@#%^&*()\\-=+\\[{\\]}\\\\|;:'\",.<>/?]+)",
 
   "indentationRules": {
-    "increaseIndentPattern": "^\\s*(namespace|model|structure|enumeration|function|if|else|while|for|switch|try|catch|finally|begin|case|default)\\b(?!.*\\bend\\b).*$",
-    "decreaseIndentPattern": "^\\s*(end|else|catch|finally|case|default)\\b"
+    "increaseIndentPattern": "^\\s*((abstract|internal|override|protected|public|sealed|shared|virtual)\\s+)*(namespace|model|structure|enumeration|function|loop|if|else|switch|case|default|try|catch|finally|begin)\\b(?!.*\\bend\\b)(?!.*;\\s*$).*$|^.*\\bfunction\\b[^()]*\\([^()]*(?:\\([^()]*\\)[^()]*)*\\)\\s*$",
+    "decreaseIndentPattern": "^\\s*(end|until|else|catch|finally|case|default)\\b"
   },
 
   "onEnterRules": [
