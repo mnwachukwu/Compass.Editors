@@ -53,7 +53,7 @@ function closingLine(lines) {
  */
 function indentOf(lines) {
     for (const line of lines) {
-        const written = /^(\s+)(source|reference|entry|ignore)\b/.exec(line);
+        const written = /^(\s+)(source|reference|entry|output|ignore)\b/.exec(line);
 
         if (written) {
             return written[1];
@@ -143,6 +143,35 @@ function withEntry(text, type) {
 }
 
 /**
+ * The text of a project written into a given folder, replacing wherever it was written before.
+ *
+ * Below the sources rather than above them, which is the opposite of where `entry` goes and is
+ * the order the samples are written in: what a build is made of comes first, and where it lands
+ * comes last. Replacing rather than adding, because a project is written to one place — a second
+ * `output` is an error, so writing one would break the file this is editing.
+ */
+function withOutput(text, folder) {
+    const lines = text.split('\n');
+    const written = lineIn(text, `${indentOf(lines)}output ${folder}`);
+    const at = lines.findIndex(line => /^\s*output\b/.test(line));
+
+    if (at >= 0) {
+        lines[at] = written;
+        return lines.join('\n');
+    }
+
+    const closing = closingLine(lines);
+
+    if (closing < 0) {
+        return null;
+    }
+
+    lines.splice(closing, 0, written);
+
+    return lines.join('\n');
+}
+
+/**
  * What a line lists as a source, or null for a line that lists none.
  *
  * Deliberately not a reading of the format — it recognises one word at the start of a line and
@@ -172,6 +201,7 @@ module.exports = {
     relativeTo,
     sourceNamed,
     withEntry,
+    withOutput,
     withSource,
     withoutSource,
     within,

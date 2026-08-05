@@ -6,7 +6,9 @@
     { "include": "#comment-block" },
     { "include": "#comment-line" },
     { "include": "#header" },
+    { "include": "#path" },
     { "include": "#entry" },
+    { "include": "#ignore" },
     { "include": "#end" }
   ],
   "repository": {
@@ -31,12 +33,30 @@
       }
     },
 
-    "entry": {
-      "comment": "The whole vocabulary besides the header and the closer. A word that is not one of these is reported by the compiler, and is left unhighlighted here so that it looks as wrong as it is.",
-      "match": "^\\s*(source|reference)\\s+(\\S+)",
+    "path": {
+      "comment": "The three lines whose argument is a place on disk. A word that is not part of the vocabulary is reported by the compiler, and is left unhighlighted here so that it looks as wrong as it is.",
+      "match": "^\\s*(source|reference|output)\\s+(\\S+)",
       "captures": {
         "1": { "name": "keyword.other.profi-c" },
         "2": { "name": "string.unquoted.path.profi-c" }
+      }
+    },
+
+    "entry": {
+      "comment": "Which Program the build begins at. Scoped as a type rather than as a path, because that is what it is: the namespaces in front of the type and the type, written as a 'using' would write it.",
+      "match": "^\\s*(entry)\\s+(\\S+)",
+      "captures": {
+        "1": { "name": "keyword.other.profi-c" },
+        "2": { "name": "entity.name.type.profi-c" }
+      }
+    },
+
+    "ignore": {
+      "comment": "What every file the project builds should stop being told. The argument is accepted exactly where the compiler accepts one — a severity or a diagnostic — so a line naming anything else stays unhighlighted, which is what the compiler says about it too.",
+      "match": "^\\s*(ignore)\\s+(warning|opinion|[Pp][Cc][0-9]{4})\\b",
+      "captures": {
+        "1": { "name": "keyword.other.profi-c" },
+        "2": { "name": "constant.language.profi-c" }
       }
     },
 

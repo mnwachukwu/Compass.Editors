@@ -4,8 +4,9 @@
 // nothing writes a file. Reads a JSON array of requests on standard input and writes a JSON array
 // of results, the same shape as the other tools beside it.
 //
-// Each request is { "op": "add" | "remove" | "entry", "text", "project", "file", "type" }, and
-// each result is the new text or null where the edit changes nothing.
+// Each request is { "op": "add" | "remove" | "entry" | "output", "text", "project", "file",
+// "type" }, and each result is the new text or null where the edit changes nothing. An "output"
+// takes the folder in "type", since both name one thing rather than a path to resolve.
 
 const path = require('path');
 const projects = require(path.join(__dirname, '..', 'projects.js'));
@@ -25,6 +26,9 @@ process.stdin.on('end', () => {
 
             case 'entry':
                 return projects.withEntry(asked.text, asked.type);
+
+            case 'output':
+                return projects.withOutput(asked.text, asked.type);
 
             case 'within':
                 return projects.within(asked.project, asked.file);

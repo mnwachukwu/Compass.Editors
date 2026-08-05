@@ -255,6 +255,64 @@ public sealed class ProjectEditingTests : EditorTestBase
                 """));
     }
 
+    // ---- Where a project's build goes -----------------------------------------------------------
+
+    /// <summary>
+    /// <para>An output goes at the foot, below the sources.</para>
+    /// <para>The opposite end from <c>entry</c>, and the order the samples are written in: what a
+    /// build is made of comes first and where it lands comes last.</para>
+    /// </summary>
+    [Test]
+    public void AnOutputGoesBelowTheSources()
+    {
+        Assert.That(
+            Written(new Edit("output", Storefront, Project, null, "../artifacts/storefront")),
+            Is.EqualTo("""
+                project Storefront
+                    reference ../core/core.pcp
+                    source Program.pc
+                    source models
+                    output ../artifacts/storefront
+                end project
+                """));
+    }
+
+    /// <summary>
+    /// One already written is replaced where it stands rather than joined by a second. A project
+    /// is written to one place, so two <c>output</c> lines is `PC0629` — an edit that added one
+    /// would break the file it was asked to change.
+    /// </summary>
+    [Test]
+    public void AnOutputAlreadyWrittenIsReplacedInPlace()
+    {
+        const string Somewhere = """
+            project Storefront
+                source Program.pc
+                output bin
+                source models
+            end project
+            """;
+
+        Assert.That(
+            Written(new Edit("output", Somewhere, Project, null, "../artifacts")),
+            Is.EqualTo("""
+                project Storefront
+                    source Program.pc
+                    output ../artifacts
+                    source models
+                end project
+                """));
+    }
+
+    /// <summary>
+    /// A project with no <c>end project</c> is one this cannot write into, and says so by
+    /// answering nothing rather than by guessing where the foot of it is.
+    /// </summary>
+    [Test]
+    public void AnOutputNeedsSomewhereToGo() => Assert.That(
+        Written(new Edit("output", "project Storefront\n    source Program.pc", Project, null, "bin")),
+        Is.Null);
+
     // ---- What is left alone --------------------------------------------------------------------
 
     /// <summary>

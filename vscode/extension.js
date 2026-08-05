@@ -106,6 +106,7 @@ function activate(context) {
         vscode.commands.registerCommand('profi-c.addToProject', file => listFile(file, true)),
         vscode.commands.registerCommand('profi-c.removeFromProject', file => listFile(file, false)),
         vscode.commands.registerCommand('profi-c.setEntryPoint', setEntryPoint),
+        vscode.commands.registerCommand('profi-c.setOutputFolder', setOutputFolder),
         vscode.commands.registerCommand('profi-c.chooseTarget', chooseTarget),
         vscode.commands.registerCommand('profi-c.useTheColors', useTheColors),
         vscode.commands.registerCommand('profi-c.stopTheServer', stopTheServer),
@@ -1095,6 +1096,79 @@ async function setEntryPoint(file) {
 
     vscode.window.showInformationMessage(
         `Profi-C: ${path.basename(project)} now starts at ${program}.`);
+}
+
+/**
+ * Says where a project's build should go, by picking the folder.
+ *
+ * Picked rather than typed, because the line is a path relative to the project file and working
+ * one of those out by hand is where a reader gets it wrong — the folder dialog knows where
+ * everything is and this writes down the way between them.
+ *
+ * Works from either kind of file. A `.pcp` is the thing being edited, and a `.pc` is what the
+ * reader is more often looking at when the thought occurs, so the project claiming it is found
+ * the same way every other project command finds it.
+ */
+async function setOutputFolder(file) {
+    const path = require('path');
+    const document = fileInFront(file);
+
+    if (!document) {
+        vscode.window.showInformationMessage(
+            'Profi-C: open a project, or a file one lists, to say where its build goes.');
+
+        return;
+    }
+
+    const project = document.fsPath.endsWith('.pcp')
+        ? document.fsPath
+        : projectClaiming(document.fsPath).project;
+
+    if (!project) {
+        vscode.window.showInformationMessage(
+            'Profi-C: no project lists this file. A loose file always builds into the bin '
+            + 'beside it.');
+
+        return;
+    }
+
+    const picked = await vscode.window.showOpenDialog({
+        canSelectFiles: false,
+        canSelectFolders: true,
+        canSelectMany: false,
+        defaultUri: vscode.Uri.file(path.dirname(project)),
+        openLabel: 'Build into this folder',
+        title: `Where ${path.basename(project)} builds`,
+    });
+
+    if (!picked || picked.length === 0) {
+        return;
+    }
+
+    const folder = projects.relativeTo(project, picked[0].fsPath);
+
+    if (folder.length === 0) {
+        vscode.window.showInformationMessage(
+            'Profi-C: that is the folder the project is in. Pick one to build into, so what a '
+            + 'tool made stays apart from what you wrote.');
+
+        return;
+    }
+
+    const opened = await vscode.workspace.openTextDocument(vscode.Uri.file(project));
+    const written = projects.withOutput(opened.getText(), folder);
+
+    if (written === null) {
+        vscode.window.showErrorMessage(
+            `Profi-C: ${path.basename(project)} has no 'end project' to write before.`);
+
+        return;
+    }
+
+    await write(opened, written);
+
+    vscode.window.showInformationMessage(
+        `Profi-C: ${path.basename(project)} now builds into ${folder}.`);
 }
 
 /** The document a command was invoked on, whether from a menu or from the editor. */

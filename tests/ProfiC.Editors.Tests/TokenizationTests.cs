@@ -26,7 +26,14 @@ public sealed class TokenizationTests : EditorTestBase
     /// committed and a checkout without them is an ordinary state to be in. Restoring them is
     /// <c>npm install</c> in the extension's folder.</para>
     /// </summary>
-    private static Token[][] Scopes(params string[] lines)
+    private static Token[][] Scopes(params string[] lines) =>
+        ScopesUnder("source.profi-c", lines);
+
+    /// <summary>
+    /// The same, under whichever grammar is named. A project file is written in the second one
+    /// the extension ships, and nothing looked at what that one colors until this.
+    /// </summary>
+    private static Token[][] ScopesUnder(string scope, params string[] lines)
     {
         if (!Directory.Exists(Path.Combine(Extension, "node_modules")))
         {
@@ -44,6 +51,7 @@ public sealed class TokenizationTests : EditorTestBase
         };
 
         start.ArgumentList.Add(Path.Combine("tools", "scopes.js"));
+        start.ArgumentList.Add(scope);
 
         using Process node = StartOrIgnore(start);
 
@@ -177,4 +185,64 @@ public sealed class TokenizationTests : EditorTestBase
     [TestCase("yield total", "total")]
     public void SomethingThatIsNotADeclarationIsNotColoredAsOne(string line, string word) =>
         Assert.That(Carried(Scopes(line), word), Does.Not.Contain("entity.name.type.profi-c"));
+
+    // ---- The project file, which is the extension's other grammar -----------------------------
+
+    private const string ProjectScope = "source.profi-c-project";
+
+    /// <summary>
+    /// <para>Every word a project file may say is colored as one.</para>
+    /// <para>Nothing looked at this grammar at all, and it had fallen three words behind the
+    /// compiler: <c>entry</c> and <c>ignore</c> were as gray as a typo, and so was <c>output</c>
+    /// the moment it existed. That is worse than coloring nothing — the grammar's own rule is
+    /// that a word it does not know looks wrong <em>because</em> it is wrong, and a valid line
+    /// reading as a mistake breaks the only signal it offers.</para>
+    /// </summary>
+    [TestCase("project Storefront", "project")]
+    [TestCase("    source Program.pc", "source")]
+    [TestCase("    reference ../books/books.pcp", "reference")]
+    [TestCase("    output ../artifacts", "output")]
+    [TestCase("    entry Tools.Program", "entry")]
+    [TestCase("    ignore PC0410", "ignore")]
+    [TestCase("end project", "end project")]
+    public void EveryWordAProjectFileSaysIsColoredAsOne(string line, string word) =>
+        Assert.That(
+            Carried(ScopesUnder(ProjectScope, line), word),
+            Does.Contain("keyword.other.profi-c"));
+
+    /// <summary>
+    /// <para>A word from some other build system is left alone, which is what the compiler says
+    /// about it too. This is the claim the test above would let through if the grammar simply
+    /// colored the first word of every line.</para>
+    /// <para>Asked of the whole line rather than of the word, because an unmatched line comes
+    /// back as one token holding all of it — there is no <c>include</c> to look up, which is
+    /// itself the answer.</para>
+    /// </summary>
+    [TestCase("    include Program.pc")]
+    [TestCase("    exclude Program.pc")]
+    [TestCase("    ignore whatever")]
+    public void AWordAProjectFileDoesNotSayIsLeftLookingWrong(string line) =>
+        Assert.That(
+            ScopesUnder(ProjectScope, line).SelectMany(one => one).SelectMany(t => t.Scopes),
+            Does.Not.Contain("keyword.other.profi-c"),
+            line);
+
+    /// <summary>
+    /// What follows the word is colored for what it is. Three of the lines name a place on disk
+    /// and one names a type, and reading an entry as a path would say the build begins at a file.
+    /// </summary>
+    [Test]
+    public void WhatFollowsTheWordIsColoredForWhatItIs()
+    {
+        Assert.Multiple(() =>
+        {
+            Assert.That(
+                Carried(ScopesUnder(ProjectScope, "    output ../artifacts"), "../artifacts"),
+                Does.Contain("string.unquoted.path.profi-c"));
+
+            Assert.That(
+                Carried(ScopesUnder(ProjectScope, "    entry Tools.Program"), "Tools.Program"),
+                Does.Contain("entity.name.type.profi-c"));
+        });
+    }
 }

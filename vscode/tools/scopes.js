@@ -10,10 +10,14 @@
 // The engine here is the one VS Code runs: vscode-textmate over the Oniguruma
 // regex library. A rule that behaves differently here behaves differently there.
 //
-// Reads lines as JSON on standard input, writes JSON on standard output:
+// Reads lines as JSON on standard input, writes JSON on standard output. The
+// scope to tokenize under may be named as an argument, which is how the project
+// file's own grammar is reached:
 //
 //     echo '["# @summary: A thing."]' | node tools/scopes.js
 //     [[{"text":"# ","scopes":["source.profi-c","comment.line..."]}, ...]]
+//
+//     echo '["source Program.pc"]' | node tools/scopes.js source.profi-c-project
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -21,6 +25,14 @@ const oniguruma = require("vscode-oniguruma");
 const textmate = require("vscode-textmate");
 
 const here = path.dirname(__dirname);
+
+// Every grammar the extension ships, by the scope it answers to. Both are here
+// rather than only the language's, because a project file is a thing a reader
+// looks at and its grammar had nothing checking what it colored.
+const grammars = {
+    "source.profi-c": "profi-c.tmLanguage.json",
+    "source.profi-c-project": "profi-c-project.tmLanguage.json",
+};
 
 async function main() {
     const wasm = fs.readFileSync(
@@ -34,19 +46,19 @@ async function main() {
             createOnigString: (text) => new oniguruma.OnigString(text),
         }),
 
-        // Only the one grammar is offered, so a scope name it does not know
-        // returns null and the caller sees an empty result rather than a crash.
+        // A scope name that is neither returns null, so the caller sees an
+        // empty result rather than a crash.
         loadGrammar: async (scope) =>
-            scope === "source.profi-c"
+            scope in grammars
                 ? textmate.parseRawGrammar(
                     fs.readFileSync(
-                        path.join(here, "syntaxes", "profi-c.tmLanguage.json"),
-                        "utf8"),
-                    "profi-c.tmLanguage.json")
+                        path.join(here, "syntaxes", grammars[scope]), "utf8"),
+                    grammars[scope])
                 : null,
     });
 
-    const grammar = await registry.loadGrammar("source.profi-c");
+    const grammar = await registry.loadGrammar(
+        process.argv[2] ?? "source.profi-c");
     const lines = JSON.parse(fs.readFileSync(0, "utf8"));
 
     // State is carried from one line to the next, which is what makes a block

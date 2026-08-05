@@ -108,6 +108,11 @@
         "category": "Profi-C"
       },
       {
+        "command": "profi-c.setOutputFolder",
+        "title": "Build this project into a folder",
+        "category": "Profi-C"
+      },
+      {
         "command": "profi-c.chooseTarget",
         "title": "Choose the target platform",
         "category": "Profi-C"
@@ -166,8 +171,13 @@
           "group": "1_what@2"
         },
         {
+          "command": "profi-c.setOutputFolder",
+          "group": "2_where@1",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+        },
+        {
           "command": "profi-c.chooseTarget",
-          "group": "2_where@1"
+          "group": "2_where@2"
         }
       ],
       "explorer/context": [
@@ -185,6 +195,11 @@
           "command": "profi-c.setEntryPoint",
           "group": "profi-c@3",
           "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.setOutputFolder",
+          "group": "profi-c@4",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
         }
       ],
       "commandPalette": [
@@ -207,6 +222,10 @@
         {
           "command": "profi-c.setEntryPoint",
           "when": "resourceLangId == profi-c"
+        },
+        {
+          "command": "profi-c.setOutputFolder",
+          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
         }
       ]
     },

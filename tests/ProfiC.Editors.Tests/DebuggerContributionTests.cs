@@ -438,7 +438,8 @@ public sealed class DebuggerContributionTests : EditorTestBase
                          .Select(e => e.GetProperty("command").GetString()),
             Is.EqualTo(new[]
             {
-                "profi-c.buildFile", "profi-c.buildProject", "profi-c.chooseTarget",
+                "profi-c.buildFile", "profi-c.buildProject",
+                "profi-c.setOutputFolder", "profi-c.chooseTarget",
             }));
 
     /// <summary>
@@ -534,19 +535,21 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
             Assert.That(inList, Is.EqualTo(new[]
             {
-                "profi-c.buildFile", "profi-c.buildProject", "profi-c.chooseTarget",
+                "profi-c.buildFile", "profi-c.buildProject",
+                "profi-c.setOutputFolder", "profi-c.chooseTarget",
             }));
         });
     }
 
     /// <summary>
-    /// <para>Choosing what to build and choosing where to build for are separate sections.</para>
+    /// <para>Building and saying where a build goes are separate sections.</para>
     /// <para>Menu groups are what draw the line between them: entries sharing a group sit
-    /// together, and a change of group renders a separator. Putting all three in one group would
-    /// read as three equal choices, when the third is a setting the first two obey.</para>
+    /// together, and a change of group renders a separator. Putting all four in one group would
+    /// read as four equal choices, when the last two are settings the first two obey — one
+    /// naming the folder the build lands in and one the machine it is built for.</para>
     /// </summary>
     [Test]
-    public void WhatToBuildAndWhereToBuildForAreSeparateSections()
+    public void WhatToBuildAndWhereItGoesAreSeparateSections()
     {
         Dictionary<string, string> groups = Contributes()
             .GetProperty("menus")
@@ -559,6 +562,10 @@ public sealed class DebuggerContributionTests : EditorTestBase
         Assert.Multiple(() =>
         {
             Assert.That(groups["profi-c.buildFile"], Is.EqualTo(groups["profi-c.buildProject"]));
+
+            Assert.That(
+                groups["profi-c.setOutputFolder"], Is.EqualTo(groups["profi-c.chooseTarget"]),
+                "both say where a build goes, so they sit together");
 
             Assert.That(
                 groups["profi-c.chooseTarget"],
