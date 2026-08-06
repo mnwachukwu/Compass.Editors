@@ -98,6 +98,8 @@ function activate(context) {
             createDebugAdapterDescriptor: startTheCompilersAdapter,
         }),
 
+        vscode.debug.onDidReceiveDebugSessionCustomEvent(answerTheProgram),
+
         vscode.commands.registerCommand('profi-c.runFile', file => start(file, ThisFile)),
         vscode.commands.registerCommand('profi-c.runProject', file => start(file, TheProject)),
         vscode.commands.registerCommand('profi-c.buildFile', file => build(file, ThisFile)),
@@ -386,6 +388,31 @@ const TheProject = 'project';
  * It does not fight the Problems panel a refused run opens: that path never starts a session.
  */
 const ShowTheConsole = 'openOnSessionStart';
+
+/**
+ * Puts the reader where a waiting program is answered.
+ *
+ * A program is answered in the Debug Console, on the line at the foot of it. That box is meant for
+ * evaluating an expression against a stopped program, which is a thing Profi-C has no way to write
+ * — so the adapter gives it to whatever is waiting to read instead, and answering a program is
+ * typing directly under the question it asked.
+ *
+ * Which leaves this with one job: the console is where the answer goes, so the console is where
+ * the cursor should be. Nothing else happens here — the adapter is already waiting, and it goes on
+ * waiting until a line arrives or the session ends.
+ */
+async function answerTheProgram(received) {
+    if (received.event !== 'profi-c/read') {
+        return;
+    }
+
+    try {
+        await vscode.commands.executeCommand('workbench.panel.repl.view.focus');
+    } catch {
+        // An editor that has moved or renamed that view still shows the console; it is simply
+        // not focused for them. Failing to help is not worth failing over.
+    }
+}
 
 /**
  * The configurations offered when there is no launch.json.
