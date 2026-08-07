@@ -896,9 +896,9 @@ function isProfiC(rule) {
  * Fills in a configuration for someone who pressed F5 without writing one.
  *
  * VS Code passes an empty configuration when there is no launch.json, and this is where that
- * becomes "debug the file in front of me". Worth doing rather than leaving: a teaching language
- * wants opening a program and running it to work, and requiring a launch.json first asks a
- * beginner to learn the editor before the language.
+ * becomes "debug the file in front of me". Worth doing rather than leaving: an introductory
+ * language wants opening a program and running it to work, and requiring a launch.json first
+ * asks a beginner to learn the editor before the language.
  */
 function debugWhatIsOpenWhereNothingSaysOtherwise(folder, configuration) {
     if (!configuration.type && !configuration.request && !configuration.name) {
