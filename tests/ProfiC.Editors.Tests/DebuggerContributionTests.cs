@@ -895,14 +895,20 @@ public sealed class DebuggerContributionTests : EditorTestBase
     public void TheVersionIsRealAndTheInstructionsDoNotRepeatIt()
     {
         string version = Manifest().RootElement.GetProperty("version").GetString()!;
-        string readme = File.ReadAllText(Path.Combine(Extension, "README.md"));
+
+        // The instructions moved to docs when the extension's own README became the Marketplace
+        // listing. This follows them, since it is the instructions that could name a stale
+        // folder — the listing does not tell anybody to link anything.
+        string instructions = File.ReadAllText(
+            Path.Combine(RepositoryRoot, "docs", "the-extension.md"));
 
         Assert.Multiple(() =>
         {
             Assert.That(Version.TryParse(version, out _), Is.True, version);
 
             Assert.That(
-                Regex.Matches(readme, @"profi-c-(\d+\.\d+\.\d+)").Select(f => f.Groups[1].Value),
+                Regex.Matches(instructions, @"profi-c-(\d+\.\d+\.\d+)")
+                     .Select(f => f.Groups[1].Value),
                 Is.Empty,
                 "the folder to install into carries no version, so nothing there can go stale");
         });

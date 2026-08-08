@@ -1,0 +1,19 @@
+# What stays out of the packaged .vsix.
+#
+# Everything in this folder ships otherwise, and a .vsix is downloaded by every person who
+# installs the extension - so what is in it should be what the extension needs to run and
+# nothing else.
+#
+# node_modules is deliberately not listed. vsce works out which packages are production
+# dependencies and ships only those, so vscode-languageclient goes in and the TextMate engine
+# the tests use does not. Excluding the folder outright would take the language client with it,
+# and the server would fail to start on every machine but this one.
+
+# The helpers the test project drives. Nothing extension.js requires reaches them.
+tools/**
+
+# Resolved by whoever installs, not carried.
+package-lock.json
+
+# The source of icon.png. The picture ships; the drawing of it does not need to.
+icon.svg

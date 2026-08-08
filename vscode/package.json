@@ -1,10 +1,26 @@
 {
   "name": "profi-c",
   "displayName": "Profi-C",
-  "description": "Syntax highlighting and debugging for Profi-C.",
+  "description": "Syntax highlighting, debugging, and a language server for Profi-C.",
   "version": "1.0.0",
-  "publisher": "profi-c",
+  "publisher": "pluperfect",
   "license": "MIT",
+  "icon": "icon.png",
+
+  "//galleryBanner": "The strip the listing puts the icon on: the same near-black as the site and the shared-link card, so the three agree. 'theme' says whether the Marketplace writes its own text light or dark over it.",
+  "galleryBanner": {
+    "color": "#14161a",
+    "theme": "dark"
+  },
+
+  "homepage": "https://profi-c.pluperfect.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mnwachukwu/Profi-C.Editors"
+  },
+  "bugs": {
+    "url": "https://github.com/mnwachukwu/Profi-C.Editors/issues"
+  },
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -15,7 +31,18 @@
   },
   "categories": [
     "Programming Languages",
-    "Debuggers"
+    "Debuggers",
+    "Formatters"
+  ],
+  "keywords": [
+    "profi-c",
+    "programming language",
+    "introductory",
+    "education",
+    "debugger",
+    "syntax highlighting",
+    "language server",
+    "fractions"
   ],
   "activationEvents": [
     "onDebugResolve:profi-c",

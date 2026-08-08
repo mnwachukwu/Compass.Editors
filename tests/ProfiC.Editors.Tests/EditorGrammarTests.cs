@@ -361,10 +361,13 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// <para>Every scope named anywhere colors are chosen is one the grammar still
     /// produces.</para>
     /// <para>Two files name these by hand — the workspace settings that color this repository
-    /// while it is worked on, and the block the extension's README offers anyone else to copy.
-    /// A scope renamed in the grammar leaves both pointing at nothing, which is silent, paints
-    /// nothing, and looks exactly like a color that will not take. One did sit stale in the
-    /// README for a while, which is how this test came to exist.</para>
+    /// while it is worked on, and the block <c>docs/the-extension.md</c> offers anyone else to
+    /// copy. A scope renamed in the grammar leaves both pointing at nothing, which is silent,
+    /// paints nothing, and looks exactly like a color that will not take. One did sit stale for
+    /// a while, which is how this test came to exist.</para>
+    /// <para>That block sat in the extension's own README until that became the Marketplace
+    /// listing, which says a sentence about the palette rather than carrying it. This follows
+    /// the block rather than the file it used to be in.</para>
     /// </summary>
     /// <remarks>
     /// Both files are in this repository. The palette used to live in Profi-C's workspace
@@ -372,7 +375,7 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// applied in that one folder — it moved here so that installing the extension is enough.
     /// </remarks>
     [TestCase("vscode/palette.js")]
-    [TestCase("vscode/README.md")]
+    [TestCase("docs/the-extension.md")]
     public void EveryColoredScopeIsOneTheGrammarProduces(string file)
     {
         string grammar = File.ReadAllText(GrammarPath);
@@ -497,18 +500,18 @@ public sealed class EditorGrammarTests : EditorTestBase
     }
 
     /// <summary>
-    /// <para>The palette shown in the README agrees with the one the extension applies.</para>
-    /// <para>The README once carried the whole thing and drifted from it on three colors,
-    /// unnoticed, because nothing compared them. It now shows a few rules to give the shape and
-    /// points at the palette for the rest — and the few it shows are held to what the command
-    /// actually writes, since a wrong color in the one place a reader copies from is worse than
-    /// no example at all.</para>
+    /// <para>The palette the documentation shows agrees with the one the extension applies.</para>
+    /// <para>It once carried the whole thing and drifted from it on three colors, unnoticed,
+    /// because nothing compared them. It now shows a few rules to give the shape and points at
+    /// the palette for the rest — and the few it shows are held to what the command actually
+    /// writes, since a wrong color in the one place a reader copies from is worse than no
+    /// example at all.</para>
     /// </summary>
     [Test]
-    public void TheReadmePaletteAgreesWithTheOneApplied()
+    public void TheDocumentedPaletteAgreesWithTheOneApplied()
     {
         Dictionary<string, string> applied = Palette(Path.Combine("vscode", "palette.js"));
-        Dictionary<string, string> shown = Palette(Path.Combine("vscode", "README.md"));
+        Dictionary<string, string> shown = Palette(Path.Combine("docs", "the-extension.md"));
 
         Assert.Multiple(() =>
         {

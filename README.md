@@ -84,7 +84,9 @@ is the ordinary business of using it and fixing what that turns up.
 definition, completion both after a dot and for a bare name, signature help, quick fixes, rename,
 coloring every name for what the compiler worked out it is, marking every use of the name under
 the caret, and formatting. What it does and how much of it is `pc` rather than JavaScript is in
-[the extension's README](vscode/README.md).
+[the full account of the extension](docs/the-extension.md). The
+[listing](vscode/README.md) beside it is the short version, written for somebody deciding
+whether to install it.
 
 ## The vocabulary, and why the tests need Profi-C beside them
 

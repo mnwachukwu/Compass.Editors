@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 48 48" fill="none">
+    <!--
+        The source of icon.png, which is what the manifest points at and what the Marketplace
+        shows. Kept beside it so the picture can be redrawn rather than reconstructed.
+
+        The same compass as the site's favicon and the card a shared link becomes. Three copies
+        of one mark; change it in one and change it in all three.
+
+        No tile behind it. The disc is already a solid shape, so it carries its own silhouette
+        against a light listing and a dark one alike - a square behind a circle would only be a
+        second edge doing the first one's job.
+    -->
+    <defs>
+        <linearGradient id="face" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#8b46ff" />
+            <stop offset="1" stop-color="#5b21b6" />
+        </linearGradient>
+    </defs>
+
+    <circle cx="24" cy="24" r="23" fill="url(#face)" />
+
+    <path fill="#ffffff" d="M35 13 L28.2 28.2 L19.8 19.8 Z" />
+    <path fill="#d0bfff" fill-opacity="0.55" d="M13 35 L19.8 19.8 L28.2 28.2 Z" />
+</svg>
