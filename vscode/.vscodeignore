@@ -15,5 +15,6 @@ tools/**
 # Resolved by whoever installs, not carried.
 package-lock.json
 
-# The source of icon.png. The picture ships; the drawing of it does not need to.
+# The mark itself, which everything showing it reads. The Marketplace wants a PNG and gets one;
+# somebody installing the extension has no use for the drawing it was made from.
 icon.svg

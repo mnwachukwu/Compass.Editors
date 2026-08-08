@@ -1,14 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 48 48" fill="none">
     <!--
-        The source of icon.png, which is what the manifest points at and what the Marketplace
-        shows. Kept beside it so the picture can be redrawn rather than reconstructed.
+        The language's mark, and the only drawing of it anywhere. A compass, for a language
+        somebody is meant to find their way with.
 
-        The same compass as the site's favicon and the card a shared link becomes. Three copies
-        of one mark; change it in one and change it in all three.
+        Everything else that shows this picture reads this file. The website copies it in before
+        every build, the way it copies the grammar and the palette, and uses the one copy as its
+        favicon, in its header, and on the card a shared link becomes. Nothing redraws it, so
+        there is no second answer to drift from this one.
+
+        It lives here rather than on the website because the website is not open source and this
+        extension is: a published package cannot be built from a repository its readers cannot
+        clone. It lives beside the extension rather than with the compiler because packaging must
+        work from a checkout of this repository alone.
+
+        icon.png is the exception, and it is a rasterization rather than a copy - the Marketplace
+        accepts PNG only. Redraw it after changing anything below:
+
+            node vscode/tools/draw-icon.js
+
+        Filled rather than a ring. A ring is the obvious drawing and it fails where it matters: at
+        sixteen pixels the stroke falls to a hairline and the needle inside becomes a smudge. A
+        disc keeps its weight at every size, and the needle stays legible because it is cut out of
+        it in white rather than drawn in a near neighbour of the same purple.
+
+        The needle points north-east and is lit on that side, dimmed on the other, which is how a
+        compass needle is drawn and what stops it reading as a plain diamond.
 
         No tile behind it. The disc is already a solid shape, so it carries its own silhouette
         against a light listing and a dark one alike - a square behind a circle would only be a
-        second edge doing the first one's job.
+        second edge doing the first one's job. It reaches nearly to the edge of the box for the
+        same reason: padding is something the page around it can add and cannot take away.
     -->
     <defs>
         <linearGradient id="face" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
