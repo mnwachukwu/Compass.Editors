@@ -437,7 +437,7 @@
         "profi-c.compilerPath": {
           "type": "string",
           "default": "pc",
-          "description": "The Profi-C compiler to run when debugging. The default finds it on PATH, which is where 'dotnet tool install' puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
+          "description": "The Profi-C compiler to run when debugging. The default finds it on PATH, which is where installing Profi-C puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
         },
         "profi-c.inlayHints.types": {
           "type": "boolean",

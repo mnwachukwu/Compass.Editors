@@ -172,9 +172,9 @@ answer while somebody types — diagnostics, completion, hover, go to definition
 references, rename.
 
 **What holds up publishing is the compiler rather than the extension.** All three of those need
-`pc` on the reader's PATH, and Profi-C is not on NuGet yet. An extension that installs cleanly
-and then cannot start anything is worse than one nobody has — so this waits on that, and on
-nothing here.
+`pc` on the reader's PATH, and there is no released build of Profi-C to install yet. An extension
+that installs cleanly and then cannot start anything is worse than one nobody has — so this waits
+on that, and on nothing here.
 
 ## License
 

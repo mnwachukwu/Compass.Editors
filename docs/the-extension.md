@@ -165,9 +165,10 @@ variables pane shows what is in scope.
 speaks the Debug Adapter Protocol over its standard input and output. This extension starts it
 and gets out of the way — it holds no second copy of the rules about where to stop.
 
-```bash
-dotnet tool install --global profi-c
-```
+[Installing Profi-C](https://profi-c.pluperfect.dev/install) is one command per platform, and
+puts `pc` on your PATH. The instructions live there rather than here, because which command a
+reader needs is a fact about their machine and about the current release, and neither is
+something this document would find out about.
 
 Where `pc` is somewhere else — installed to a folder of its own, or built from the Profi-C
 repository — name it in your settings:
@@ -473,8 +474,8 @@ pointing at nothing. A file that *is* colored but will not debug is a different 
 of these:
 
 1. **`pc` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
-   it was launched, which on Windows may predate a `dotnet tool install`. Restarting the editor
-   is usually enough; naming the full path in `profi-c.compilerPath` always is.
+   it was launched, which on Windows may predate the install that put `pc` there. Restarting the
+   editor is usually enough; naming the full path in `profi-c.compilerPath` always is.
 2. **The program does not compile.** Nothing starts, and the reasons are in the Problems panel
    rather than in a dialog — the panel is opened for you, and each entry clicks through to the
    line.
