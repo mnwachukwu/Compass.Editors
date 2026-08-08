@@ -58,6 +58,21 @@ let collected;
 let client;
 
 /**
+ * What a folded comment says, by file and by the line it opens on.
+ *
+ * Counted from zero, as the protocol counts and as {@link vscode.TextEditor.visibleRanges} counts,
+ * so nothing here converts between the two.
+ *
+ * Kept because folding and saying what was folded happen at different moments: the ranges are
+ * worked out when the file changes, and what one says is wanted when somebody collapses it, which
+ * may be much later and must not wait for the compiler.
+ */
+const folded = new Map();
+
+/** How a folded comment's words are drawn, made the first time there are some. See {@link foldLabel}. */
+let foldedComment;
+
+/**
  * What VS Code handed to `activate`, kept so the server can be started again later.
  *
  * The server is started once at activation and again whenever somebody restarts it — and the
@@ -75,6 +90,27 @@ let activation;
 function problemsPanel() {
     collected ??= vscode.languages.createDiagnosticCollection('profi-c');
     return collected;
+}
+
+/**
+ * How what a folded comment says is drawn: faintly, after the marks it folded onto.
+ *
+ * The editor draws its own mark for the fold and it is left alone, so this is only the words.
+ *
+ * Made on demand for the same reason the panel above is, and the reason matters more here: an
+ * editor cannot be asked for a decoration until there is one to ask, and this file is read by
+ * tests that never start an editor at all.
+ */
+function foldLabel() {
+    foldedComment ??= vscode.window.createTextEditorDecorationType({
+        after: {
+            color: new vscode.ThemeColor('editorCodeLens.foreground'),
+            fontStyle: 'italic',
+            margin: '0 0 0 1ch',
+        },
+    });
+
+    return foldedComment;
 }
 
 function activate(context) {
@@ -99,6 +135,15 @@ function activate(context) {
         }),
 
         vscode.debug.onDidReceiveDebugSessionCustomEvent(answerTheProgram),
+
+        // Both are how a fold is noticed: collapsing one changes which lines are visible, and so
+        // does scrolling, which brings a fold made earlier into view.
+        vscode.window.onDidChangeTextEditorVisibleRanges(
+            change => sayWhatIsFolded(change.textEditor)),
+        vscode.window.onDidChangeActiveTextEditor(sayWhatIsFolded),
+        vscode.workspace.onDidCloseTextDocument(
+            document => folded.delete(document.uri.toString())),
+        foldLabel(),
 
         vscode.commands.registerCommand('profi-c.runFile', file => start(file, ThisFile)),
         vscode.commands.registerCommand('profi-c.runProject', file => start(file, TheProject)),
@@ -167,12 +212,114 @@ function startTheServer(context) {
             // which is nowhere, for somebody flipping the switch to see what it does.
             initializationOptions: { 'profi-c': hintSettings() },
             synchronize: { configurationSection: 'profi-c' },
+            middleware: { provideFoldingRanges: rememberWhatEachFoldSays },
         });
 
     client.start().catch(() => {
         client = undefined;
         context.subscriptions.push(outlineWithoutAServer());
     });
+}
+
+/**
+ * Reads the folding ranges the server answers with, keeping what each comment says.
+ *
+ * **This is the one place the answer arrives whole.** The protocol carries what to show in place
+ * of a collapsed range as `collapsedText`, and the client drops it — it announces that it cannot
+ * draw one, and converts each range into the three fields VS Code's own type has. Asking again
+ * afterwards would be a second request for an answer already in hand, so the request the editor
+ * was going to make anyway is made here and read before it is converted.
+ *
+ * Only a comment says anything. A folded block leaves the line that opens it on screen, and that
+ * line names what went away.
+ */
+async function rememberWhatEachFoldSays(document, context, token, next) {
+    if (!client) {
+        return next(document, context, token);
+    }
+
+    let answered;
+
+    try {
+        answered = await client.sendRequest(
+            'textDocument/foldingRange',
+            { textDocument: client.code2ProtocolConverter.asTextDocumentIdentifier(document) },
+            token);
+    } catch {
+        // A compiler that does not know the request, or one shutting down. The editor falls back
+        // to folding by indentation, which is what it does for a language nothing told it about.
+        return next(document, context, token);
+    }
+
+    if (token.isCancellationRequested) {
+        return null;
+    }
+
+    const says = new Map();
+
+    for (const range of Array.isArray(answered) ? answered : []) {
+        if (range.collapsedText) {
+            says.set(range.startLine, range.collapsedText);
+        }
+    }
+
+    folded.set(document.uri.toString(), says);
+
+    for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document === document) {
+            sayWhatIsFolded(editor);
+        }
+    }
+
+    // Converted by the client, which is what would have converted it had this not read it first.
+    return client.protocol2CodeConverter.asFoldingRanges(answered, token);
+}
+
+/**
+ * Writes what each folded comment says at the end of the line it folded onto.
+ *
+ * **Which comments are folded is read from what is on screen.** An editor's visible ranges come
+ * back split wherever lines are hidden, so a gap between one range's last line and the next
+ * range's first is a stretch that was folded away, and the line above the gap is the one it folded
+ * onto. There is no other way to ask: what is folded is the editor's own and is not offered.
+ *
+ * A gap only counts where the compiler said a comment opens on that line, so the bottom edge of
+ * the viewport — which also ends a visible range — can never be mistaken for a fold.
+ */
+function sayWhatIsFolded(editor) {
+    if (!editor || !Debuggable.includes(editor.document.languageId)) {
+        return;
+    }
+
+    const says = folded.get(editor.document.uri.toString());
+
+    if (!says) {
+        return;
+    }
+
+    const shown = editor.visibleRanges;
+    const written = [];
+
+    for (let at = 1; at < shown.length; at++) {
+        const line = shown[at - 1].end.line;
+        const text = says.get(line);
+
+        if (text === undefined || shown[at].start.line <= line + 1) {
+            continue;
+        }
+
+        const ends = editor.document.lineAt(line).text.length;
+
+        written.push({
+            // Over the last character rather than at the point past it. A range with no width is
+            // where an editor throws injected text away before drawing it, and the line a comment
+            // folds onto always has a character on it — the marks that open the comment.
+            range: new vscode.Range(line, Math.max(0, ends - 1), line, ends),
+            renderOptions: { after: { contentText: text } },
+        });
+    }
+
+    editor.setDecorations(foldLabel(), written);
 }
 
 /**
@@ -194,6 +341,14 @@ async function stopTheServer() {
 
     await client.stop();
     client = undefined;
+
+    // Nothing is left saying what a fold holds, since nothing is left to correct it. A label from
+    // the compiler being replaced would otherwise sit on a file edited while it was gone.
+    folded.clear();
+
+    for (const editor of vscode.window.visibleTextEditors) {
+        editor.setDecorations(foldLabel(), []);
+    }
 
     vscode.window.showInformationMessage(
         'Profi-C: the language server has stopped. The compiler can now be replaced.');
