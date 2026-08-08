@@ -164,17 +164,22 @@ worth having because nothing else would notice: VS Code says nothing useful abou
 it cannot load — the extension simply never activates, and a debugger contributed in the
 manifest is absent from the menu for a reason recorded only in an extension host log.
 
-## Why the extension is not published yet
+## Installing it
 
-Not because anything here is missing. The grammar colors a file on its own, the debugger sets
-breakpoints and steps, and `startTheServer` connects to `pc lsp` for everything a compiler has to
-answer while somebody types — diagnostics, completion, hover, go to definition, find all
-references, rename.
+From the Marketplace, as `Pluperfect.profi-c` — in VS Code, search the Extensions view for
+Profi-C, or:
 
-**What holds up publishing is the compiler rather than the extension.** All three of those need
-`pc` on the reader's PATH, and there is no released build of Profi-C to install yet. An extension
-that installs cleanly and then cannot start anything is worse than one nobody has — so this waits
-on that, and on nothing here.
+```bash
+code --install-extension Pluperfect.profi-c
+```
+
+**It needs the compiler.** The grammar colors a file on its own, but the debugger, the language
+server and every build command run `pc`, so an extension installed beside no compiler colors
+code and does nothing else. [Installing Profi-C](https://profi-c.pluperfect.dev/install) is one
+command per platform and puts `pc` on your PATH.
+
+A `.vsix` is attached to [each release](https://github.com/mnwachukwu/Profi-C.Editors/releases)
+as well, for an offline machine or to pin a version.
 
 ## License
 
