@@ -1,0 +1,179 @@
+# Publishes the extension: to the Marketplace, and as a .vsix on a GitHub release.
+#
+# **A tag is the whole act.** Pushing `v1.0.0` runs this; nothing else does. The same shape as the
+# compiler's release, so that cutting a version of Profi-C is one habit rather than three.
+#
+# **It runs the whole test suite first, on Linux, exactly as a push to main does.** A published
+# version cannot be replaced — the Marketplace refuses any version at or below one already there —
+# so the last chance to find out something is broken is before the upload, not after.
+#
+# Publishing needs a VSCE_PAT secret: an Azure DevOps personal access token, scoped to **all
+# accessible organizations** with **Marketplace → Manage**. Scoped to one organization it fails
+# with a bare 401 that explains nothing.
+#
+# **That token expires** — Azure DevOps defaults to thirty days and allows at most a year — and it
+# is the one part of this pipeline with a shelf life. Nothing here watches it between releases, so
+# a lapsed one is found on the day it is wanted. What this does instead is find it in the first
+# ten seconds and say what it is, rather than after two CI runs and in the words of an HTTP
+# status: see the `token` job below.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+  # So a release can be rehearsed without a tag existing. Nothing is published on this path —
+  # see the conditions on the last two steps.
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # <b>Nothing is published that CI has not passed, on every system CI covers.</b> These are the
+  # same runs a push to main makes, called rather than repeated — so the bar for a release is
+  # exactly the bar for a merge, and it stays that way when the bar moves.
+  #
+  # Both, even though the package itself is the same file either way: what these prove is that
+  # the extension works against a compiler built on that system, and the answers it asks for —
+  # which project claims a file, where a path points — are the ones that differ.
+  verify-linux:
+    name: Linux
+    uses: ./.github/workflows/build.yml
+    with:
+      os: ubuntu-latest
+
+  verify-windows:
+    name: Windows
+    uses: ./.github/workflows/build.yml
+    with:
+      os: windows-latest
+
+  # <b>Asked before anything is built, and answered in about ten seconds.</b>
+  #
+  # The token this publishes with expires — Azure DevOps defaults to thirty days and allows at
+  # most a year — and an expired one refuses with a bare 401 that names no cause. Left to the
+  # publish step, that arrives after two full CI runs, against a tag that has already been pushed
+  # and cannot be pushed again. Asked here it arrives first, next to the reason.
+  #
+  # `verify-pat` is the question itself rather than a proxy for it: it asks the Marketplace
+  # whether this token may publish as this publisher, which is the thing that has to be true.
+  token:
+    name: The token can still publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Ask the Marketplace
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          publisher=$(node -p "require('./vscode/package.json').publisher")
+
+          if [ -z "${VSCE_PAT:-}" ]; then
+            echo "::error title=No token::There is no VSCE_PAT secret in this repository, so"\
+                 "nothing can be published. Add one at Settings > Secrets and variables >"\
+                 "Actions: an Azure DevOps token scoped to ALL ACCESSIBLE ORGANIZATIONS with"\
+                 "Marketplace > Manage."
+            exit 1
+          fi
+
+          if ! npx @vscode/vsce verify-pat "$publisher"; then
+            echo "::error title=The publishing token is the problem, not the code::The"\
+                 "Marketplace refused the VSCE_PAT secret for publisher '$publisher'. Nothing"\
+                 "about this extension is wrong. The token has almost certainly expired — Azure"\
+                 "DevOps tokens last a year at most, and thirty days by default. Issue a new one"\
+                 "at https://dev.azure.com (User settings > Personal access tokens), scoped to"\
+                 "ALL ACCESSIBLE ORGANIZATIONS with Marketplace > Manage, and replace the"\
+                 "VSCE_PAT secret under Settings > Secrets and variables > Actions. Then delete"\
+                 "this tag and push it again. Scoping the token to a single organization is the"\
+                 "other cause, and looks identical from here."
+            exit 1
+          fi
+
+          echo "The token may publish as $publisher."
+
+  publish:
+    name: Package and publish
+    needs: [verify-linux, verify-windows, token]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The manifest's version is what the Marketplace records, and the tag is what a reader
+      # browsing releases sees. Checked rather than derived: they are written by hand at
+      # different moments, and a tag that disagrees would publish a version nobody can find by
+      # the name it was announced under.
+      - name: The tag and the manifest agree
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          declared=$(node -p "require('./vscode/package.json').version")
+          tagged="${GITHUB_REF_NAME#v}"
+
+          if [ "$declared" != "$tagged" ]; then
+            echo "The tag says $tagged and vscode/package.json says $declared."
+            echo "One of them is wrong, and a release cannot say both."
+            exit 1
+          fi
+
+          echo "Releasing $declared."
+
+      # What the package ships. vsce works out which of these are production dependencies and
+      # carries only those, so the TextMate engine the tests use stays out and the language
+      # client goes in.
+      - name: Install what the extension ships
+        working-directory: vscode
+        run: npm install
+
+      # Built before anything is published, so that a package that will not build fails here
+      # rather than halfway through a release. The file is what gets uploaded below — packaging
+      # again inside `publish` would upload one artifact and publish a different one.
+      - name: Package
+        working-directory: vscode
+        run: npx @vscode/vsce package --out profi-c.vsix
+
+      - name: Keep the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: vscode/profi-c.vsix
+
+      # The Marketplace first, because it is the half that cannot be undone. A version published
+      # there is permanent — it can be unlisted, never replaced — so if it fails, nothing else
+      # about this release should have happened either.
+      - name: Publish to the Marketplace
+        if: startsWith(github.ref, 'refs/tags/')
+        working-directory: vscode
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        # Nothing is asked about the token here. The `token` job above has already asked the
+        # Marketplace, and this job does not start until it answered — a second check would be a
+        # second answer to a settled question, and the one that failed would be whichever ran.
+        run: npx @vscode/vsce publish --packagePath profi-c.vsix
+
+      # And the same file on the release, for anyone who would rather install from a .vsix than
+      # from the Marketplace — an offline machine, or a reader pinning a version.
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes "Install from the Marketplace, or from the .vsix below. See vscode/CHANGELOG.md for what changed." \
+            vscode/profi-c.vsix
