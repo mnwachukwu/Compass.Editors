@@ -113,6 +113,33 @@ CI checks out both, and then **fails if anything skipped at all**. That second h
 the skip a local convenience rather than a hole: a run that quietly omitted the tests holding the
 grammar to the language would otherwise be indistinguishable from a run that passed them.
 
+## Looking at a change
+
+**Press F5.** A second VS Code window opens with the extension loaded straight out of `vscode/`,
+and reloading that window (`Ctrl+R`) picks up whatever was just edited. Two configurations sit in
+[.vscode/launch.json](.vscode/launch.json) — one on an empty window, one with Profi-C's samples
+already open, which is the one to use when the change is to the grammar and you need code in
+front of you.
+
+**The version in the manifest has nothing to do with this**, and it is worth saying because the
+other loop costs a version number every time round. VS Code refuses to install a `.vsix` whose
+version it already has, so packaging and installing to see a change means bumping first — which
+is how this extension reached 1.9.0 without ever being released.
+
+Where the packaged artifact is the thing to check — that the `.vsix` holds the right files, that
+it installs at all — build it and install it over itself:
+
+```bash
+npx @vscode/vsce package
+```
+
+```bash
+code --install-extension profi-c-1.0.0.vsix --force
+```
+
+`--force` is the part that matters. Without it the install is refused as already present, and a
+version bump is what somebody reaches for instead.
+
 ## Running the tests
 
 ```bash
@@ -137,14 +164,15 @@ manifest is absent from the menu for a reason recorded only in an extension host
 
 ## Why the extension is not published yet
 
-The grammar is Tier 1 of the plan in Profi-C's design record: syntax highlighting, which
-delivers most of the perceived value for a few hours of work. The debugger is Tier 2 and is now
-here. Diagnostics, completion, and go-to-definition are the language server — Tier 3, a much
-larger piece, and not written.
+Not because anything here is missing. The grammar colors a file on its own, the debugger sets
+breakpoints and steps, and `startTheServer` connects to `pc lsp` for everything a compiler has to
+answer while somebody types — diagnostics, completion, hover, go to definition, find all
+references, rename.
 
-What holds up publishing is the compiler rather than the extension: debugging needs `pc` on the
-reader's PATH, and Profi-C is not on NuGet yet. An extension that installs cleanly and then
-cannot start anything is worse than one nobody has.
+**What holds up publishing is the compiler rather than the extension.** All three of those need
+`pc` on the reader's PATH, and Profi-C is not on NuGet yet. An extension that installs cleanly
+and then cannot start anything is worse than one nobody has — so this waits on that, and on
+nothing here.
 
 ## License
 

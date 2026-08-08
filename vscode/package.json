@@ -2,7 +2,7 @@
   "name": "profi-c",
   "displayName": "Profi-C",
   "description": "Syntax highlighting and debugging for Profi-C.",
-  "version": "1.9.0",
+  "version": "1.0.0",
   "publisher": "profi-c",
   "license": "MIT",
   "engines": {

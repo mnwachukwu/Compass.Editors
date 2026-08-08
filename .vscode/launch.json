@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // The plain one. Opens an empty window, which is what you want when the change is
+            // to the manifest, the debugger contribution, or activation.
+            "name": "The extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": ["--extensionDevelopmentPath=${workspaceFolder}/vscode"]
+        },
+        {
+            // The same, with Profi-C's samples already open, which is what you want when the
+            // change is to the grammar or the editing rules and you need code to look at.
+            //
+            // Reads the checkout beside this one, as the tests do. Without it the window opens
+            // on a folder that is not there, and the extension still loads.
+            "name": "The extension, over the samples",
+            "type": "extensionHost",
+            "request": "launch",
+            "args": [
+                "--extensionDevelopmentPath=${workspaceFolder}/vscode",
+                "${workspaceFolder}/../Profi-C/samples"
+            ]
+        }
+    ]
+}
