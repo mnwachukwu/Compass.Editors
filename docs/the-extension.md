@@ -5,7 +5,7 @@ Everything the VS Code extension does, and how it is put together. The
 install it; this is the one to read when something is not behaving, or when you are working on
 the extension itself.
 
-Syntax highlighting for `.pc` programs and `.pcp` project files, the editor behavior that comes
+Syntax highlighting for `.cm` programs and `.cmp` project files, the editor behavior that comes
 with knowing the language — bracket matching, `Ctrl+/` inserting `#`, auto-closing quotes, and
 indentation that follows `end` — and **a debugger**: breakpoints, stepping, a call stack, and a
 variables pane.
@@ -19,7 +19,7 @@ analysis of all of them.
 
 ## Installing it
 
-**This is not on the VS Code Marketplace**, and will not be for a while — Profi-C is young
+**This is not on the VS Code Marketplace**, and will not be for a while — Compass is young
 enough that publishing an extension for it would be putting up a shopfront before there is
 anything to sell. Installing it means putting this folder where VS Code looks, which is all the
 Marketplace would do anyway. There is no build step: the grammars are declarative and the one
@@ -32,7 +32,7 @@ script is plain JavaScript with nothing to compile. Once it is published,
 npm install --omit=dev
 ```
 
-That is `vscode-languageclient`, which is how the extension talks to `pc lsp` — the compiler
+That is `vscode-languageclient`, which is how the extension talks to `cm lsp` — the compiler
 answering questions about a file while it is being typed. Everything else here works without it,
 so a failed install costs the live diagnostics and nothing more.
 
@@ -47,8 +47,8 @@ the repository. A change shows up on the next window reload and there is no copy
 **Windows** needs neither an elevated shell nor Developer Mode if you use a *junction*:
 
 ```powershell
-$repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c"
+$repo = "D:\Repos\Compass.Editors"
+$dest = "$env:USERPROFILE\.vscode\extensions\compass"
 if (Test-Path $dest) {
     if ((Get-Item $dest -Force).LinkType) { cmd /c rmdir "$dest" }
     else { cmd /c rmdir /s /q "$dest" }
@@ -78,8 +78,8 @@ elevation a symbolic link asks for buys nothing in this case.
 **macOS and Linux** have one answer:
 
 ```bash
-repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c
+repo=~/Compass.Editors
+dest=~/.vscode/extensions/compass
 rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 ```
 
@@ -88,21 +88,21 @@ rm -rf "$dest" && ln -s "$repo/vscode" "$dest"
 > delete what is on the other side of it, which here is the repository. Remove the link alone:
 >
 > ```powershell
-> (Get-Item "$env:USERPROFILE\.vscode\extensions\profi-c" -Force).Delete()
+> (Get-Item "$env:USERPROFILE\.vscode\extensions\compass" -Force).Delete()
 > ```
 >
-> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\profi-c"` with no `/s`. On macOS and
+> or `cmd /c rmdir "%USERPROFILE%\.vscode\extensions\compass"` with no `/s`. On macOS and
 > Linux, `rm` on the link removes the link.
 
-### Copying it — for anyone who only wants to read Profi-C
+### Copying it — for anyone who only wants to read Compass
 
 Change the first line to wherever you cloned the repository, then run the rest as-is.
 
 **Windows** (PowerShell):
 
 ```powershell
-$repo = "D:\Repos\Profi-C.Editors"
-$dest = "$env:USERPROFILE\.vscode\extensions\profi-c"
+$repo = "D:\Repos\Compass.Editors"
+$dest = "$env:USERPROFILE\.vscode\extensions\compass"
 if (Test-Path $dest) {
     if ((Get-Item $dest -Force).LinkType) { cmd /c rmdir "$dest" }
     else { cmd /c rmdir /s /q "$dest" }
@@ -114,20 +114,20 @@ Copy-Item "$repo\vscode\*" $dest -Recurse -Force
 **macOS and Linux**:
 
 ```bash
-repo=~/Profi-C.Editors
-dest=~/.vscode/extensions/profi-c
+repo=~/Compass.Editors
+dest=~/.vscode/extensions/compass
 rm -rf "$dest" && mkdir -p "$dest" && cp -R "$repo/vscode/." "$dest"
 ```
 
 ### Either way
 
-Reload the window — `Ctrl+Shift+P`, "Developer: Reload Window" — and open a `.pc` file.
+Reload the window — `Ctrl+Shift+P`, "Developer: Reload Window" — and open a `.cm` file.
 
 - **VS Code Insiders** uses `.vscode-insiders` rather than `.vscode`. Everything else is the
   same.
 - **The folder needs no version in its name.** The Marketplace lays extensions out as
   `publisher.name-version`, and it is easy to assume that is required — it is not. VS Code reads
-  the version from `package.json`, so a plain `profi-c` folder is enough, and a link made once
+  the version from `package.json`, so a plain `compass` folder is enough, and a link made once
   never has to be made again.
 - **A grammar edit lands on the next reload. A `package.json` edit needs a version bump.**
   Grammar files are read each time one is needed; everything under `contributes` is read once,
@@ -148,33 +148,33 @@ Nothing is wrong with the grammar in either case; the editor is reading an old o
 hunting for a bug, check the installed copy holds the rule you expect:
 
 ```powershell
-Select-String delegate "$env:USERPROFILE\.vscode\extensions\profi-c\syntaxes\profi-c.tmLanguage.json"
+Select-String delegate "$env:USERPROFILE\.vscode\extensions\compass\syntaxes\compass.tmLanguage.json"
 ```
 
 A link cannot go stale, which is the whole argument for one.
 
 ## Debugging
 
-Set a breakpoint in the margin of a `.pc` file, press `F5`, and the program stops there. Step
+Set a breakpoint in the margin of a `.cm` file, press `F5`, and the program stops there. Step
 over, step into, and step out all work; the call stack names every function in progress and the
 variables pane shows what is in scope.
 
 ### What it needs
 
-**The compiler on your PATH.** Everything about debugging happens inside `pc debug`, which
+**The compiler on your PATH.** Everything about debugging happens inside `cm debug`, which
 speaks the Debug Adapter Protocol over its standard input and output. This extension starts it
 and gets out of the way — it holds no second copy of the rules about where to stop.
 
-[Installing Profi-C](https://profi-c.pluperfect.dev/install) is one command per platform, and
-puts `pc` on your PATH. The instructions live there rather than here, because which command a
+[Installing Compass](https://compass.pluperfect.dev/install) is one command per platform, and
+puts `cm` on your PATH. The instructions live there rather than here, because which command a
 reader needs is a fact about their machine and about the current release, and neither is
 something this document would find out about.
 
-Where `pc` is somewhere else — installed to a folder of its own, or built from the Profi-C
+Where `cm` is somewhere else — installed to a folder of its own, or built from the Compass
 repository — name it in your settings:
 
 ```jsonc
-"profi-c.compilerPath": "D:\\Repos\\Profi-C\\src\\ProfiC.Cli\\bin\\Debug\\net10.0\\profi-c.exe"
+"compass.compilerPath": "D:\\Repos\\Compass\\src\\Compass.Cli\\bin\\Debug\\net10.0\\compass.exe"
 ```
 
 A single configuration can override it too, with `compilerPath` beside `program`, which is the
@@ -182,7 +182,7 @@ way to debug one project against a build of the compiler without changing anythi
 
 ### The buttons above the file
 
-Open a `.pc` file and two buttons appear side by side at the left of the editor's title bar.
+Open a `.cm` file and two buttons appear side by side at the left of the editor's title bar.
 
 **▶ Run** is the editor's own play button — the same one a C# or Python file gets. **One click
 runs**, and the chevron beside it lists the two ways:
@@ -190,7 +190,7 @@ runs**, and the chevron beside it lists the two ways:
 | | |
 |---|---|
 | **Run this file** | Compiles the open file with the shared code beside it, and runs it |
-| **Run project associated with this file** | Finds the `.pcp` that lists the open file and runs that instead |
+| **Run project associated with this file** | Finds the `.cmp` that lists the open file and runs that instead |
 
 Both debug. There is one adapter and it always stops where breakpoints are set — what differs is
 only what gets compiled. Whichever you pick last becomes what a single click does next time.
@@ -202,13 +202,13 @@ editor that refused to would be answering a different question than the compiler
 
 **Both buttons save first.** The compiler reads files rather than buffers, so pressing Run with
 unsaved edits would compile the version you have just changed away from — and report mistakes
-about text no longer on screen. Every Profi-C file with unsaved edits is saved before anything is
-compiled, which also means what ran is what is on disk: `pc run` in a terminal gives the same
+about text no longer on screen. Every Compass file with unsaved edits is saved before anything is
+compiled, which also means what ran is what is on disk: `cm run` in a terminal gives the same
 answer as the button.
 
 ## Diagnostics while you type
 
-Open a `.pc` file and the compiler starts answering about it as you write, through `pc lsp` — a
+Open a `.cm` file and the compiler starts answering about it as you write, through `cm lsp` — a
 language server that stays open and holds the file as the editor holds it, rather than reading
 what was last saved.
 
@@ -219,8 +219,8 @@ none: half-written code is full of errors that are not errors, and a panel strob
 beginner to ignore it. Opening and saving do not wait, since both are you saying you have
 stopped.
 
-**A program is a compilation, not a file.** A mistake in `Shelf.pc` is reported against
-`Shelf.pc` even where you are looking at `Program.pc` and have never opened it — and it is
+**A program is a compilation, not a file.** A mistake in `Shelf.cm` is reported against
+`Shelf.cm` even where you are looking at `Program.cm` and have never opened it — and it is
 cleared from the panel when it is fixed, which takes an explicit message rather than silence.
 
 The same server answers everything else about wherever the cursor is:
@@ -228,8 +228,8 @@ The same server answers everything else about wherever the cursor is:
 | | |
 |---|---|
 | **Hover** | What the thing under the cursor is — a local's type, or a function written out with what it yields and what it takes |
-| **Go to definition** | `F12`, and it crosses files: a name declared in `Shelf.pc` is followed from `Program.pc` |
-| **Breadcrumbs and the Outline** | What the file declares. This used to come from `pc outline`, which reads the disk — so it showed the file as last saved. It now follows what you are typing |
+| **Go to definition** | `F12`, and it crosses files: a name declared in `Shelf.cm` is followed from `Program.cm` |
+| **Breadcrumbs and the Outline** | What the file declares. This used to come from `cm outline`, which reads the disk — so it showed the file as last saved. It now follows what you are typing |
 | **Completion** | After a dot, typing `word.` lists what a `string` answers, `shape.` what that model declares and inherited, `Math.` what is reached through the name. On its own, the locals and parameters in force, every type you can reach, and `this` |
 | **Signature help** | What a function takes, while you are typing the arguments — which is when you cannot see the declaration, because you are looking at the call |
 | **Quick fixes** | The lightbulb beside `&&` offers `and`. Also `\|\|`, `**` and `!` |
@@ -293,13 +293,13 @@ You also get `constant` rendered as read-only and `shared` as static without any
 color, because the server describes a name in the protocol's own vocabulary and most themes
 already have opinions about those.
 
-**Run `Profi-C: Use the Profi-C colors` to get them.** It writes both sets into your own settings
-— an extension cannot impose colors — and turns semantic highlighting on for `.pc` files, which
+**Run `Compass: Use the Compass colors` to get them.** It writes both sets into your own settings
+— an extension cannot impose colors — and turns semantic highlighting on for `.cm` files, which
 matters more than it sounds: it ships set to "whatever the theme wants", so a theme that does not
 ask for it would discard all of the above and say nothing about why.
 
 **Completion is the one question that cannot be asked of what you have written.** `word.` is not
-Profi-C and never will be — there is no member yet, so there is no member access to ask about. The
+Compass and never will be — there is no member yet, so there is no member access to ask about. The
 server puts a name where the member will go, compiles *that*, and reads the receiver off it. So
 what is offered is what the compiler would resolve, rather than a guess made by something reading
 half-written syntax.
@@ -321,14 +321,14 @@ names around it to be known.
 
 ### Replacing the compiler while the editor is open
 
-**`Profi-C: Stop the language server`** and **`Profi-C: Restart the language server`**.
+**`Compass: Stop the language server`** and **`Compass: Restart the language server`**.
 
 You need the first one if you are working on the compiler itself. The server is a running copy of
-`pc`, and a running program cannot be overwritten on Windows — so publishing a new one over it
+`cm`, and a running program cannot be overwritten on Windows — so publishing a new one over it
 fails, and the only way out used to be closing the editor. Stop it, publish, then restart:
 
 ```bash
-dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist
+dotnet publish src/Compass.Cli.Alias -p:PublishProfile=dist
 ```
 
 Restarting also starts one that is not running, which is what you want after stopping. Both say
@@ -336,7 +336,7 @@ what happened, because a command that appears to do nothing gets run twice and t
 
 A compiler too old to know the command has no server to connect to, and nothing says so: the
 highlighting is declarative, and running and building are their own commands. The outline falls
-back to `pc outline` in that case, which is why it is still there. The client's output channel
+back to `cm outline` in that case, which is why it is still there. The client's output channel
 records what happened for anyone looking.
 
 **🔨 Build** sits immediately to its right:
@@ -362,13 +362,13 @@ with JavaScript's `Number`, so a fraction is as valid as an integer.
 
 ### Which project is "associated"
 
-**The one that lists the file, not the one nearest it.** A `.pcp` sitting above a file says what
+**The one that lists the file, not the one nearest it.** A `.cmp` sitting above a file says what
 it builds, and a file it does not list is no more part of it than one in another folder. Running
 the nearest project regardless would compile a program you are not looking at, print its output,
 and look exactly like the button working.
 
-**The compiler answers it**, with `pc project`. Not "reads projects the way the compiler does" —
-it is the same reader, which matters more than it sounds. A `.pcp` is read for a `source` naming
+**The compiler answers it**, with `cm project`. Not "reads projects the way the compiler does" —
+it is the same reader, which matters more than it sounds. A `.cmp` is read for a `source` naming
 a file, a `source` naming a folder, and a `reference` to another project, but also for the two
 comment forms and for `end project`; scanning the file for the word `source` gets a commented-out
 one wrong, and gets it wrong in the direction that runs a program you were not looking at.
@@ -393,27 +393,27 @@ you can run without naming `dotnet`. It runs as a **task**, so the output goes t
 the form every .NET tool already reads:
 
 ```
-storefront/Program.pc(19,26): error PC0300: A string cannot be added to an integer.
+storefront/Program.cm(19,26): error CM0300: A string cannot be added to an integer.
 ```
 
 Three severities are matched separately — `error` and `warning` as themselves, and **`opinion`
-as information**. VS Code knows only the first two words; the third is Profi-C's. A single
+as information**. VS Code knows only the first two words; the third is Compass's. A single
 matcher would file every opinion at its default severity, which would paint the panel red with
 the one severity that means *this compiles fine, but*.
 
 ### Choosing what to build for
 
 **Choose the target platform** lists the platforms this machine can actually build for, with the
-current one marked, and the choice is remembered per workspace in `profi-c.targetPlatform`. It
+current one marked, and the choice is remembered per workspace in `compass.targetPlatform`. It
 shows in the status bar so you can see what you are aiming at without opening anything.
 
-The list is asked of the compiler — `pc platforms` — rather than written into this extension,
+The list is asked of the compiler — `cm platforms` — rather than written into this extension,
 because what is available depends on which launchers the SDK installed and which any project has
 ever published for. A fixed list would offer platforms that cannot be built for, and finding that
 out is the compiler's job:
 
 ```
-pc: nothing here can build for 'freebsd-x64'. Available: linux-x64, osx-x64,
+cm: nothing here can build for 'freebsd-x64'. Available: linux-x64, osx-x64,
 win-arm, win-arm64, win-x64, win-x86. 'dotnet publish -r freebsd-x64' on any
 project fetches what is needed.
 ```
@@ -424,32 +424,32 @@ program rather than a construct the back end has not reached.
 ### Without a launch.json
 
 **There is nothing to configure and no file to write.** The same two configurations appear in the
-Run and Debug list, and `F5` on an open `.pc` file runs it. That is deliberate: asking a beginner
+Run and Debug list, and `F5` on an open `.cm` file runs it. That is deliberate: asking a beginner
 to write a launch.json first is asking them to learn the editor before the language — and asking
-anyone to copy one into every folder they keep Profi-C in is asking them to do it forever.
+anyone to copy one into every folder they keep Compass in is asking them to do it forever.
 
 ### With one
 
 For anything more — a fixed entry point, a project file, arguments you do not want to retype —
-"create a launch.json" offers a Profi-C configuration:
+"create a launch.json" offers a Compass configuration:
 
 ```jsonc
 {
-  "type": "profi-c",
+  "type": "compass",
   "request": "launch",
   "name": "Debug the storefront",
-  "program": "${workspaceFolder}/storefront/storefront.pcp"
+  "program": "${workspaceFolder}/storefront/storefront.cmp"
 }
 ```
 
-`program` may be a `.pc` file or a `.pcp` project. Naming a `.pc` file debugs it together with
-the shared code beside it, exactly as `pc run` compiles it — so stepping into a function
+`program` may be a `.cm` file or a `.cmp` project. Naming a `.cm` file debugs it together with
+the shared code beside it, exactly as `cm run` compiles it — so stepping into a function
 declared in another file works, and the call stack opens whichever file each frame is in.
 
 ### What it does not do
 
 - **No expression evaluation.** The debug console shows what the program prints. Typing into it
-  is answered with a refusal rather than a result — nothing in Profi-C evaluates an expression
+  is answered with a refusal rather than a result — nothing in Compass evaluates an expression
   outside a running program yet.
 - **No conditional breakpoints, hit counts, or log points.** A condition written on a breakpoint
   is ignored, and the breakpoint fires as an ordinary one.
@@ -463,19 +463,19 @@ hidden. Where it does not — the breakpoint menu is offered before a session ex
 ### When nothing happens
 
 **Check whether the folder is trusted first.** In Restricted Mode, VS Code disables debugging
-entirely and does not load extensions — so `F5` does nothing, and a `.pc` file is not even
+entirely and does not load extensions — so `F5` does nothing, and a `.cm` file is not even
 colored. The banner saying so is easy to dismiss without reading, and a temporary folder is
 never trusted, which makes this the likeliest thing to hit on the throwaway folder somebody
 tries this in first. `Ctrl+Shift+P` → "Workspaces: Manage Workspace Trust".
 
-**No color on a `.pc` file is the tell.** Highlighting is declarative and needs no extension to
+**No color on a `.cm` file is the tell.** Highlighting is declarative and needs no extension to
 run, so a file that is not colored means the extension was not loaded at all — trust, or a link
 pointing at nothing. A file that *is* colored but will not debug is a different problem, and one
 of these:
 
-1. **`pc` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
-   it was launched, which on Windows may predate the install that put `pc` there. Restarting the
-   editor is usually enough; naming the full path in `profi-c.compilerPath` always is.
+1. **`cm` is not on the PATH the editor sees.** VS Code inherits its environment from wherever
+   it was launched, which on Windows may predate the install that put `cm` there. Restarting the
+   editor is usually enough; naming the full path in `compass.compilerPath` always is.
 2. **The program does not compile.** Nothing starts, and the reasons are in the Problems panel
    rather than in a dialog — the panel is opened for you, and each entry clicks through to the
    line.
@@ -487,7 +487,7 @@ of these:
 ## The outline
 
 Breadcrumbs across the top, the Outline view in the sidebar, and `Ctrl+Shift+O` all draw from the
-same place: `pc outline`, which prints what a file declares as JSON.
+same place: `cm outline`, which prints what a file declares as JSON.
 
 Asked of the compiler rather than read here, for the reason everything else in this repository is
 — a parser written in JavaScript would be a second definition of the language, and the two would
@@ -524,7 +524,7 @@ Console.WriteLine("");
 
 Only the comments the compiler acts on are set apart — a remark that merely begins with the
 word, like `# ignore the sign for now`, stays an ordinary comment, and a `##` block never
-carries a directive at all. The scope is `comment.line.number-sign.directive.profi-c`.
+carries a directive at all. The scope is `comment.line.number-sign.directive.compass`.
 
 A comment can also document what follows it, and the label inside one is colored apart from
 the prose:
@@ -538,7 +538,7 @@ model Account
 ```
 
 Only the label is colored — the mark, the name and the colon together — never the prose after
-it. The scope is `constant.language.documentation.profi-c`.
+it. The scope is `constant.language.documentation.compass`.
 
 ## Where the colors come from
 
@@ -547,14 +547,14 @@ offer token colors through `configurationDefaults`, and the editor accepts the m
 then ignores them. There is no error and no warning; the manifest sits there naming a color
 nobody ever sees, which is why this extension no longer carries one.
 
-So every color on a Profi-C file comes from one of two places:
+So every color on a Compass file comes from one of two places:
 
 1. **A `textMateRules` entry**, in your user or workspace settings — which is what
-   "Profi-C: Use the Profi-C colors" writes, and what you can edit afterwards.
+   "Compass: Use the Compass colors" writes, and what you can edit afterwards.
 2. **Your theme**, for any scope no rule names.
 
-That second case is where the confusion lives. A theme knows nothing about `.profi-c` scopes,
-so it falls back on the general part of the name — `constant.language.documentation.profi-c`
+That second case is where the confusion lives. A theme knows nothing about `.compass` scopes,
+so it falls back on the general part of the name — `constant.language.documentation.compass`
 is painted as whatever the theme does with `constant.language`. In several dark themes that is
 the same color as `keyword`, so a scope that looks wrong may simply be a scope with no rule.
 
@@ -565,7 +565,7 @@ Put the cursor on the token and run:
 Developer: Inspect Editor Tokens and Scopes
 ```
 
-The last line names the rule that won. A `.profi-c` scope means a rule is being applied; a bare
+The last line names the rule that won. A `.compass` scope means a rule is being applied; a bare
 `constant.language` or `keyword` means none is, and the theme is deciding.
 
 ## Checking what the grammar really does
@@ -588,13 +588,13 @@ by hand:
 echo '["# @summary: A thing."]' | node tools/scopes.js
 ```
 
-## The Profi-C palette
+## The Compass palette
 
 Everything above is already colored by whatever theme you use, because the grammar names its
 scopes the way every other language does and a theme's rule for `keyword` reaches
-`keyword.declaration.profi-c`. Nothing has to be installed for a `.pc` file to read properly.
+`keyword.declaration.compass`. Nothing has to be installed for a `.cm` file to read properly.
 
-What a theme cannot do is tell one Profi-C construct from another where it has no reason to.
+What a theme cannot do is tell one Compass construct from another where it has no reason to.
 A primitive type and a visibility word are both `storage`, so most themes paint them alike; a
 documentation label inherits from `constant.language`, which several dark themes paint the same
 color as a keyword. **A palette written for the language does better**, because it can separate
@@ -603,11 +603,11 @@ the things a reader of *this* language wants separated.
 **That palette ships with this extension.** Run it once:
 
 ```
-Profi-C: Use the Profi-C colors
+Compass: Use the Compass colors
 ```
 
 It writes the rules into your own `settings.json` — the user one, not a workspace one — so they
-apply in every folder you ever open a `.pc` file in. It applies as soon as it is written: no
+apply in every folder you ever open a `.cm` file in. It applies as soon as it is written: no
 reload, nothing to copy, and nothing to repeat per project. Running it twice leaves one copy,
 and rules for other languages are left exactly as they were.
 
@@ -628,20 +628,20 @@ written to hold them together. A shortened version, to show the shape:
     // A line comment the compiler acts on, such as '# ignore opinion'.
     // Addressed to the compiler rather than to a reader, so it is worth
     // setting apart from the prose around it.
-    { "scope": "comment.line.number-sign.directive.profi-c",
+    { "scope": "comment.line.number-sign.directive.compass",
       "settings": { "foreground": "#7A7A7A" } },
 
     // The label in a documentation comment: '@summary:', '@yields:', or a
     // parameter's name, mark and colon together. Worth setting rather than
     // leaving to the theme, which paints a language constant the same color
     // as a keyword in several of the dark ones.
-    { "scope": "constant.language.documentation.profi-c",
+    { "scope": "constant.language.documentation.compass",
       "settings": { "foreground": "#00E5FF" } },
 
     // Both comment forms together. A comment is a comment whichever mark
     // opened it, and naming only one leaves the other whatever gray the
     // theme had in mind.
-    { "scope": ["comment.block.profi-c", "comment.line.number-sign.profi-c"],
+    { "scope": ["comment.block.compass", "comment.line.number-sign.compass"],
       "settings": { "foreground": "#4C9A5A" } }
 
     // ... and the rest, in palette.js
@@ -671,9 +671,9 @@ The full list, if you want something not above: `comment.line.number-sign`,
 `invalid.illegal.unknown-escape`, `constant.numeric.integer`, `constant.numeric.real`,
 `constant.numeric.float`, `constant.numeric.fraction`,
 `keyword.other.declaration`, `keyword.operator.comparison`, `keyword.operator.assignment`,
-`keyword.operator.arithmetic`, `keyword.operator.optional` — each with `.profi-c` on the end.
+`keyword.operator.arithmetic`, `keyword.operator.optional` — each with `.compass` on the end.
 
-A type name is `entity.name.type.profi-c` wherever it appears: after `model`, after
+A type name is `entity.name.type.compass` wherever it appears: after `model`, after
 `extends`, after `new`, after `catch`, after `is` and `as`, and standing in front of the field,
 local, or parameter it describes.
 
@@ -703,7 +703,7 @@ with text after it.
 
 ## GitHub
 
-Fenced code blocks tagged `profi-c` render as plain text on GitHub today. Highlighting there
+Fenced code blocks tagged `compass` render as plain text on GitHub today. Highlighting there
 needs the language registered with [Linguist](https://github.com/github-linguist/linguist),
 which asks for use across a few hundred repositories. Tagging them now costs nothing and starts
 working if that ever happens.

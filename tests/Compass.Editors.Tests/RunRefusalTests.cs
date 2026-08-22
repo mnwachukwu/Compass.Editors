@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>What the Run button does with a program that will not compile.</para>
@@ -10,7 +10,7 @@ namespace ProfiC.Editors.Tests;
 /// is the wrong shape for the thing it describes — a list of positions in a file is something to
 /// click through, and a dialog is something to dismiss before you can look at the code it is
 /// talking about. Every other language in the editor puts them in the panel, and so does a
-/// Profi-C <i>build</i>; only running was different.</para>
+/// Compass <i>build</i>; only running was different.</para>
 /// <para><b>Warnings do not stop a run.</b> The compiler runs a program that has them, so an
 /// editor refusing to would be answering a different question than the compiler does. They are
 /// shown all the same, since a reader who asked to run something is the reader most likely to
@@ -92,7 +92,7 @@ public sealed class RunRefusalTests : EditorTestBase
     }
 
     /// <summary>
-    /// Three programs, one per outcome. Written here rather than taken from Profi-C's corpus:
+    /// Three programs, one per outcome. Written here rather than taken from Compass's corpus:
     /// the samples that fail are meant to be read, and what is wanted here is the smallest thing
     /// that fails in one known way.
     /// </summary>
@@ -100,11 +100,11 @@ public sealed class RunRefusalTests : EditorTestBase
     {
         public Workspace()
         {
-            Folder = Path.Combine(Path.GetTempPath(), $"profi-c-refusal-{Guid.NewGuid():N}");
+            Folder = Path.Combine(Path.GetTempPath(), $"compass-refusal-{Guid.NewGuid():N}");
             Directory.CreateDirectory(Folder);
 
             Write(
-                "Broken.pc",
+                "Broken.cm",
                 """
                 shared model Program
                     function Main()
@@ -116,7 +116,7 @@ public sealed class RunRefusalTests : EditorTestBase
 
             // Compiles, and the compiler has an opinion about it: the parentheses on a value.
             Write(
-                "Warned.pc",
+                "Warned.cm",
                 """
                 shared model Program
                     function Main()
@@ -128,7 +128,7 @@ public sealed class RunRefusalTests : EditorTestBase
                 """);
 
             Write(
-                "Fine.pc",
+                "Fine.cm",
                 """
                 shared model Program
                     function Main()
@@ -153,16 +153,16 @@ public sealed class RunRefusalTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("Broken.pc"))[0];
+        Answer answer = Ask(workspace.At("Broken.cm"))[0];
 
         Assert.Multiple(() =>
         {
             Assert.That(answer.MayRun, Is.False, "a program with an error was allowed to run");
 
             Assert.That(answer.Problems, Has.Length.EqualTo(1));
-            Assert.That(answer.Problems[0].Code, Is.EqualTo("PC0026"));
+            Assert.That(answer.Problems[0].Code, Is.EqualTo("CM0026"));
             Assert.That(answer.Problems[0].Severity, Is.EqualTo("error"));
-            Assert.That(answer.Problems[0].File, Is.EqualTo("Broken.pc"));
+            Assert.That(answer.Problems[0].File, Is.EqualTo("Broken.cm"));
 
             // Zero-based, where the compiler counts from one. Line 3, column 27 as a reader
             // sees it, which is where the number begins.
@@ -176,7 +176,7 @@ public sealed class RunRefusalTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("Warned.pc"))[0];
+        Answer answer = Ask(workspace.At("Warned.cm"))[0];
 
         Assert.Multiple(() =>
         {
@@ -194,7 +194,7 @@ public sealed class RunRefusalTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("Fine.pc"))[0];
+        Answer answer = Ask(workspace.At("Fine.cm"))[0];
 
         Assert.Multiple(() =>
         {

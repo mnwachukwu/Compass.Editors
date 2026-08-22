@@ -1,17 +1,17 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Which project the "Run project associated with this file" button actually runs.</para>
-/// <para><b>Membership, not proximity.</b> A <c>.pcp</c> sitting above a file lists what it
+/// <para><b>Membership, not proximity.</b> A <c>.cmp</c> sitting above a file lists what it
 /// builds, and a file it does not list is no more part of it than one in another folder.
 /// Running the nearest project regardless would compile a program the reader is not looking at,
 /// print its output, and look exactly like the button working — which is the worst kind of wrong
 /// for a button somebody presses to check what they just wrote.</para>
-/// <para><b>The answer is the compiler's.</b> The extension runs <c>pc project</c> rather than
-/// reading a <c>.pcp</c> itself, since a second reader of that format would agree with the first
+/// <para><b>The answer is the compiler's.</b> The extension runs <c>cm project</c> rather than
+/// reading a <c>.cmp</c> itself, since a second reader of that format would agree with the first
 /// until it gained a word — and disagree silently, in the direction that runs a program nobody
 /// was looking at. What these tests hold is that the extension asks, and does the right thing
 /// with each answer.</para>
@@ -93,14 +93,14 @@ public sealed class ProjectMembershipTests : EditorTestBase
 
     /// <summary>
     /// A folder holding a project that claims one file and not another, removed however the
-    /// test ends. Built here rather than taken from Profi-C, since the case worth testing is one
+    /// test ends. Built here rather than taken from Compass, since the case worth testing is one
     /// the sample corpus has no reason to contain.
     /// </summary>
     private sealed class Workspace : IDisposable
     {
         public Workspace()
         {
-            Folder = Path.Combine(Path.GetTempPath(), $"profi-c-project-{Guid.NewGuid():N}");
+            Folder = Path.Combine(Path.GetTempPath(), $"compass-project-{Guid.NewGuid():N}");
 
             Directory.CreateDirectory(Path.Combine(Folder, "app"));
             Directory.CreateDirectory(Path.Combine(Folder, "elsewhere"));
@@ -109,22 +109,22 @@ public sealed class ProjectMembershipTests : EditorTestBase
             // comment forms, and stops at 'end project'. They are here because anything scanning
             // lines for the word reads them as claims.
             File.WriteAllText(
-                Path.Combine(Folder, "app", "app.pcp"),
+                Path.Combine(Folder, "app", "app.cmp"),
                 """
                 project App
-                    source Program.pc
+                    source Program.cm
                     ##
                         Left out for now.
-                        source Draft.pc
+                        source Draft.cm
                     ##
                 end project
-                source Stray.pc
+                source Stray.cm
                 """);
 
             string[] files =
             [
-                "app/Program.pc", "app/Loose.pc", "app/Draft.pc", "app/Stray.pc",
-                "elsewhere/Idea.pc",
+                "app/Program.cm", "app/Loose.cm", "app/Draft.cm", "app/Stray.cm",
+                "elsewhere/Idea.cm",
             ];
 
             foreach (string file in files)
@@ -155,20 +155,20 @@ public sealed class ProjectMembershipTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("app/Program.pc"))[0];
+        Answer answer = Ask(workspace.At("app/Program.cm"))[0];
 
         Assert.Multiple(() =>
         {
-            Assert.That(answer.Project, Is.EqualTo("app.pcp"));
-            Assert.That(answer.Runs, Is.EqualTo("app.pcp"));
+            Assert.That(answer.Project, Is.EqualTo("app.cmp"));
+            Assert.That(answer.Runs, Is.EqualTo("app.cmp"));
             Assert.That(answer.Said, Is.Null, "nothing to report when it found what it wanted");
         });
     }
 
     /// <summary>
     /// <para>A file beside a project that does not list it runs on its own, and says so.</para>
-    /// <para>The case the whole check exists for. <c>Loose.pc</c> sits in the same folder as
-    /// <c>app.pcp</c>, which lists only <c>Program.pc</c> — so the project is the nearest one by
+    /// <para>The case the whole check exists for. <c>Loose.cm</c> sits in the same folder as
+    /// <c>app.cmp</c>, which lists only <c>Program.cm</c> — so the project is the nearest one by
     /// every measure of distance and still the wrong answer.</para>
     /// </summary>
     [Test]
@@ -176,12 +176,12 @@ public sealed class ProjectMembershipTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("app/Loose.pc"))[0];
+        Answer answer = Ask(workspace.At("app/Loose.cm"))[0];
 
         Assert.Multiple(() =>
         {
             Assert.That(answer.Project, Is.Null);
-            Assert.That(answer.Runs, Is.EqualTo("Loose.pc"));
+            Assert.That(answer.Runs, Is.EqualTo("Loose.cm"));
 
             Assert.That(answer.Searched, Is.GreaterThan(0),
                         "a project was there to be rejected, which is what makes this the case");
@@ -202,12 +202,12 @@ public sealed class ProjectMembershipTests : EditorTestBase
     {
         using Workspace workspace = new();
 
-        Answer answer = Ask(workspace.At("elsewhere/Idea.pc"))[0];
+        Answer answer = Ask(workspace.At("elsewhere/Idea.cm"))[0];
 
         Assert.Multiple(() =>
         {
             Assert.That(answer.Project, Is.Null);
-            Assert.That(answer.Runs, Is.EqualTo("Idea.pc"));
+            Assert.That(answer.Runs, Is.EqualTo("Idea.cm"));
             Assert.That(answer.Searched, Is.Zero, "there was no project to reject");
             Assert.That(answer.Said, Does.Contain("no project found"));
         });
@@ -221,8 +221,8 @@ public sealed class ProjectMembershipTests : EditorTestBase
     /// quiet and expensive: the button compiles and runs a program the reader is not looking at,
     /// prints its output, and looks exactly like the button working.</para>
     /// </summary>
-    [TestCase("app/Draft.pc", "commented out")]
-    [TestCase("app/Stray.pc", "written after the project closed")]
+    [TestCase("app/Draft.cm", "commented out")]
+    [TestCase("app/Stray.cm", "written after the project closed")]
     public void ALineTheCompilerDoesNotReadIsNotAClaim(string file, string why)
     {
         using Workspace workspace = new();
@@ -240,22 +240,22 @@ public sealed class ProjectMembershipTests : EditorTestBase
     /// <para>The real sample projects are read the way the compiler reads them.</para>
     /// <para>Three shapes at once, and none of them a bare list of files: a source named
     /// outright, a source naming a folder, and a file reached only through another project a
-    /// <c>reference</c> pulls in. Skipped where Profi-C is not beside this, the same as the
+    /// <c>reference</c> pulls in. Skipped where Compass is not beside this, the same as the
     /// vocabulary.</para>
     /// </summary>
-    [TestCase("storefront/Program.pc", "storefront.pcp", "named outright as a source")]
-    [TestCase("storefront/models/Product.pc", "storefront.pcp", "covered by a folder source")]
-    [TestCase("library/books/Book.pc", "books.pcp", "reached through a reference")]
-    [TestCase("fizzbuzz.pc", null, "a program of one file belongs to no project")]
+    [TestCase("storefront/Program.cm", "storefront.cmp", "named outright as a source")]
+    [TestCase("storefront/models/Product.cm", "storefront.cmp", "covered by a folder source")]
+    [TestCase("library/books/Book.cm", "books.cmp", "reached through a reference")]
+    [TestCase("fizzbuzz.cm", null, "a program of one file belongs to no project")]
     public void TheSampleProjectsAreReadAsTheCompilerReadsThem(
         string sample,
         string? expected,
         string why)
     {
-        string profiC = ProfiCOrIgnore("check out Profi-C beside this repository to read its samples");
+        string compass = CompassOrIgnore("check out Compass beside this repository to read its samples");
 
         string file = Path.Combine(
-            profiC, "samples", sample.Replace('/', Path.DirectorySeparatorChar));
+            compass, "samples", sample.Replace('/', Path.DirectorySeparatorChar));
 
         Assert.That(Ask(file)[0].Project, Is.EqualTo(expected), why);
     }

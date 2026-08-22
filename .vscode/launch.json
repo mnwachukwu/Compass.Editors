@@ -10,7 +10,7 @@
             "args": ["--extensionDevelopmentPath=${workspaceFolder}/vscode"]
         },
         {
-            // The same, with Profi-C's samples already open, which is what you want when the
+            // The same, with Compass's samples already open, which is what you want when the
             // change is to the grammar or the editing rules and you need code to look at.
             //
             // Reads the checkout beside this one, as the tests do. Without it the window opens
@@ -20,7 +20,7 @@
             "request": "launch",
             "args": [
                 "--extensionDevelopmentPath=${workspaceFolder}/vscode",
-                "${workspaceFolder}/../Profi-C/samples"
+                "${workspaceFolder}/../Compass/samples"
             ]
         }
     ]

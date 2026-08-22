@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Holds the editor grammar to what the compiler actually reads.</para>
@@ -258,14 +258,14 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// </summary>
     [TestCase("# ignore warning", true)]
     [TestCase("# ignore opinion", true)]
-    [TestCase("# ignore PC0340", true)]
-    [TestCase("# ignore pc0340", true, TestName = "an identifier is read whatever its case")]
+    [TestCase("# ignore CM0340", true)]
+    [TestCase("# ignore cm0340", true, TestName = "an identifier is read whatever its case")]
     [TestCase("# ignore opinion in file", true)]
     [TestCase("# ignore opinion because the blank line is the point", true)]
     [TestCase("#ignore opinion", true, TestName = "no space after the mark")]
     [TestCase("Console.WriteLine(x); # ignore opinion", true, TestName = "after code on the line")]
     [TestCase("# ignore opinions", false, TestName = "a near miss is prose")]
-    [TestCase("# ignore PC03400", false, TestName = "an identifier is four digits")]
+    [TestCase("# ignore CM03400", false, TestName = "an identifier is four digits")]
     [TestCase("# ignore the sign for now", false)]
     [TestCase("# ignore", false, TestName = "the target is never absent")]
     [TestCase("# please ignore opinion", false, TestName = "the word comes first or not at all")]
@@ -370,7 +370,7 @@ public sealed class EditorGrammarTests : EditorTestBase
     /// the block rather than the file it used to be in.</para>
     /// </summary>
     /// <remarks>
-    /// Both files are in this repository. The palette used to live in Profi-C's workspace
+    /// Both files are in this repository. The palette used to live in Compass's workspace
     /// settings and was reached through the sibling checkout, which meant the colors only
     /// applied in that one folder — it moved here so that installing the extension is enough.
     /// </remarks>
@@ -385,7 +385,7 @@ public sealed class EditorGrammarTests : EditorTestBase
             .Matches(text, Scope)
             .SelectMany(m => Regex.Matches(m.Groups[1].Value, Quoted))
             .Select(m => m.Groups[1].Value)
-            .Where(scope => scope.EndsWith(".profi-c", StringComparison.Ordinal))
+            .Where(scope => scope.EndsWith(".compass", StringComparison.Ordinal))
             .Distinct(StringComparer.Ordinal)];
 
         Assert.Multiple(() =>
@@ -419,19 +419,19 @@ public sealed class EditorGrammarTests : EditorTestBase
     {
         string[] unpainted =
         [
-            "source.profi-c",
-            "punctuation.separator.profi-c",
-            "invalid.illegal.unknown-escape.profi-c",
-            "keyword.operator.arithmetic.profi-c",
-            "keyword.operator.assignment.profi-c",
-            "keyword.operator.comparison.profi-c",
-            "keyword.operator.optional.profi-c",
+            "source.compass",
+            "punctuation.separator.compass",
+            "invalid.illegal.unknown-escape.compass",
+            "keyword.operator.arithmetic.compass",
+            "keyword.operator.assignment.compass",
+            "keyword.operator.comparison.compass",
+            "keyword.operator.optional.compass",
         ];
 
         string palette = File.ReadAllText(Locate("vscode/palette.js"));
 
         string[] produced = [.. Regex
-            .Matches(File.ReadAllText(GrammarPath), @"[\w.\-]+\.profi-c")
+            .Matches(File.ReadAllText(GrammarPath), @"[\w.\-]+\.compass")
             .Select(m => m.Value)
             .Distinct(StringComparer.Ordinal)
             .Except(unpainted, StringComparer.Ordinal)];
@@ -450,8 +450,8 @@ public sealed class EditorGrammarTests : EditorTestBase
 
     /// <summary>
     /// <para>Where a named file is, given that one of them belongs to the other repository.</para>
-    /// <para>Anything beginning <c>.vscode/</c> is Profi-C's workspace settings; everything else
-    /// is here. Skips rather than fails where Profi-C is not beside this.</para>
+    /// <para>Anything beginning <c>.vscode/</c> is Compass's workspace settings; everything else
+    /// is here. Skips rather than fails where Compass is not beside this.</para>
     /// </summary>
     private static string Locate(string file) => Path.Combine(RepositoryRoot, file);
 
@@ -476,7 +476,7 @@ public sealed class EditorGrammarTests : EditorTestBase
     private const string Colored =
         Scope + @"\s*,\s*""?settings""?\s*:\s*\{([^}]*)\}";
 
-    /// <summary>Every color a file gives a Profi-C scope, read off its rules.</summary>
+    /// <summary>Every color a file gives a Compass scope, read off its rules.</summary>
     private static Dictionary<string, string> Palette(string file)
     {
         Dictionary<string, string> painted = new(StringComparer.Ordinal);
@@ -488,7 +488,7 @@ public sealed class EditorGrammarTests : EditorTestBase
             {
                 foreach (Match scope in Regex.Matches(rule.Groups[1].Value, Quoted))
                 {
-                    if (scope.Groups[1].Value.EndsWith(".profi-c", StringComparison.Ordinal))
+                    if (scope.Groups[1].Value.EndsWith(".compass", StringComparison.Ordinal))
                     {
                         painted[scope.Groups[1].Value] = color.Groups[1].Value;
                     }

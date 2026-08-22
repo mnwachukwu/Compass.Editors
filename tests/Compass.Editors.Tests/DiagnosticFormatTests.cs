@@ -2,14 +2,14 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Holds the problem matchers to what the compiler actually prints.</para>
 /// <para><b>This is the seam between the two repositories that nothing negotiates.</b> The
 /// language server and the debugger each speak a protocol built to be asked what the other end
 /// supports, so a mismatch there degrades. A build task is different: the extension hands VS Code
-/// three regular expressions, VS Code runs <c>pc</c> and matches them against its output, and a
+/// three regular expressions, VS Code runs <c>cm</c> and matches them against its output, and a
 /// line that matches nothing is simply not a problem. Change the shape of that line in the other
 /// repository and the Problems panel stops filling — no error, no warning, nothing in a log, and
 /// both repositories' own tests still green.</para>
@@ -48,11 +48,11 @@ public sealed class DiagnosticFormatTests : EditorTestBase
     private static string[] WhatTheCompilerPrinted()
     {
         string compiler = CompilerOrIgnore();
-        string folder = Directory.CreateTempSubdirectory("profi-c-diagnostics-").FullName;
+        string folder = Directory.CreateTempSubdirectory("compass-diagnostics-").FullName;
 
         try
         {
-            string program = Path.Combine(folder, "wrong.pc");
+            string program = Path.Combine(folder, "wrong.cm");
             File.WriteAllText(program, WrongThreeWays);
 
             ProcessStartInfo start = new()
@@ -206,7 +206,7 @@ public sealed class DiagnosticFormatTests : EditorTestBase
 
                     Assert.That(
                         file,
-                        Does.EndWith("wrong.pc"),
+                        Does.EndWith("wrong.cm"),
                         $"{named} read '{file}' as the file out of:\n  {line}");
 
                     Assert.That(
@@ -223,7 +223,7 @@ public sealed class DiagnosticFormatTests : EditorTestBase
                     // is what a suppression written against it would then fail to match.
                     Assert.That(
                         code,
-                        Does.Match(@"^PC\d{4}$"),
+                        Does.Match(@"^CM\d{4}$"),
                         $"{named} read '{code}' as the diagnostic code out of:\n  {line}");
 
                     Assert.That(

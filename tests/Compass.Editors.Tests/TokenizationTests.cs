@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>What a reader's editor actually colors, run through the engine it runs.</para>
@@ -27,7 +27,7 @@ public sealed class TokenizationTests : EditorTestBase
     /// <c>npm install</c> in the extension's folder.</para>
     /// </summary>
     private static Token[][] Scopes(params string[] lines) =>
-        ScopesUnder("source.profi-c", lines);
+        ScopesUnder("source.compass", lines);
 
     /// <summary>
     /// The same, under whichever grammar is named. A project file is written in the second one
@@ -99,19 +99,19 @@ public sealed class TokenizationTests : EditorTestBase
     [Test]
     public void ALabelInABlockIsScopedWhole() => Assert.That(
         Carried(Scopes("##", "    @summary: One person's money.", "##"), "@summary:"),
-        Does.Contain("constant.language.documentation.profi-c"));
+        Does.Contain("constant.language.documentation.compass"));
 
     [Test]
     public void ALabelInALineCommentIsScopedTheSameWay() => Assert.That(
         Carried(Scopes("# @summary: Whose account this is."), "@summary:"),
-        Does.Contain("constant.language.documentation.profi-c"));
+        Does.Contain("constant.language.documentation.compass"));
 
     /// <summary>A label keeps the comment scope under its own, so a theme coloring all
     /// comments still colors the line it sits on.</summary>
     [Test]
     public void ALabelStaysInsideItsComment() => Assert.That(
         Carried(Scopes("##", "    @summary: A thing.", "##"), "@summary:"),
-        Does.Contain("comment.block.profi-c"));
+        Does.Contain("comment.block.compass"));
 
     /// <summary>
     /// <para>The case that decided the design, checked where it counts.</para>
@@ -123,14 +123,14 @@ public sealed class TokenizationTests : EditorTestBase
         Scopes("##", "    That is why it yields an", "    optional: an answer.", "##")
             .SelectMany(line => line)
             .SelectMany(token => token.Scopes),
-        Has.None.EqualTo("constant.language.documentation.profi-c"));
+        Has.None.EqualTo("constant.language.documentation.compass"));
 
     // ---- Ignore directives ---------------------------------------------------------------
 
     [Test]
     public void ADirectiveIsScopedApartFromAnOrdinaryComment() => Assert.That(
         Carried(Scopes("# ignore opinion"), "# ignore opinion"),
-        Does.Contain("comment.line.number-sign.directive.profi-c"));
+        Does.Contain("comment.line.number-sign.directive.compass"));
 
     /// <summary>
     /// A remark opening with the word stays a remark, which is the rule the scanner reads by
@@ -139,7 +139,7 @@ public sealed class TokenizationTests : EditorTestBase
     [Test]
     public void ProseBeginningWithTheWordIsNotADirective() => Assert.That(
         Carried(Scopes("# ignore the sign for now"), "# ignore the sign for now"),
-        Does.Not.Contain("comment.line.number-sign.directive.profi-c"));
+        Does.Not.Contain("comment.line.number-sign.directive.compass"));
 
     // ---- Ordinary code, so the grammar is not merely quiet ---------------------------------
 
@@ -154,8 +154,8 @@ public sealed class TokenizationTests : EditorTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(Carried(scanned, "model"), Does.Contain("keyword.declaration.profi-c"));
-            Assert.That(Carried(scanned, "Account"), Does.Contain("entity.name.type.profi-c"));
+            Assert.That(Carried(scanned, "model"), Does.Contain("keyword.declaration.compass"));
+            Assert.That(Carried(scanned, "Account"), Does.Contain("entity.name.type.compass"));
         });
     }
 
@@ -175,7 +175,7 @@ public sealed class TokenizationTests : EditorTestBase
     [TestCase("Suit? played", "Suit")]
     [TestCase("Shapes.Circle flat", "Circle")]
     public void ADeclarationWithNothingAfterItStillColorsItsType(string line, string type) =>
-        Assert.That(Carried(Scopes(line), type), Does.Contain("entity.name.type.profi-c"));
+        Assert.That(Carried(Scopes(line), type), Does.Contain("entity.name.type.compass"));
 
     /// <summary>
     /// And a line that merely looks like one does not. The rule reaches the end of a line now, so
@@ -184,11 +184,11 @@ public sealed class TokenizationTests : EditorTestBase
     [TestCase("loop each grade in grades", "grade")]
     [TestCase("yield total", "total")]
     public void SomethingThatIsNotADeclarationIsNotColoredAsOne(string line, string word) =>
-        Assert.That(Carried(Scopes(line), word), Does.Not.Contain("entity.name.type.profi-c"));
+        Assert.That(Carried(Scopes(line), word), Does.Not.Contain("entity.name.type.compass"));
 
     // ---- The project file, which is the extension's other grammar -----------------------------
 
-    private const string ProjectScope = "source.profi-c-project";
+    private const string ProjectScope = "source.compass-project";
 
     /// <summary>
     /// <para>Every word a project file may say is colored as one.</para>
@@ -199,16 +199,16 @@ public sealed class TokenizationTests : EditorTestBase
     /// reading as a mistake breaks the only signal it offers.</para>
     /// </summary>
     [TestCase("project Storefront", "project")]
-    [TestCase("    source Program.pc", "source")]
-    [TestCase("    reference ../books/books.pcp", "reference")]
+    [TestCase("    source Program.cm", "source")]
+    [TestCase("    reference ../books/books.cmp", "reference")]
     [TestCase("    output ../artifacts", "output")]
     [TestCase("    entry Tools.Program", "entry")]
-    [TestCase("    ignore PC0410", "ignore")]
+    [TestCase("    ignore CM0410", "ignore")]
     [TestCase("end project", "end project")]
     public void EveryWordAProjectFileSaysIsColoredAsOne(string line, string word) =>
         Assert.That(
             Carried(ScopesUnder(ProjectScope, line), word),
-            Does.Contain("keyword.other.profi-c"));
+            Does.Contain("keyword.other.compass"));
 
     /// <summary>
     /// <para>A word from some other build system is left alone, which is what the compiler says
@@ -218,13 +218,13 @@ public sealed class TokenizationTests : EditorTestBase
     /// back as one token holding all of it — there is no <c>include</c> to look up, which is
     /// itself the answer.</para>
     /// </summary>
-    [TestCase("    include Program.pc")]
-    [TestCase("    exclude Program.pc")]
+    [TestCase("    include Program.cm")]
+    [TestCase("    exclude Program.cm")]
     [TestCase("    ignore whatever")]
     public void AWordAProjectFileDoesNotSayIsLeftLookingWrong(string line) =>
         Assert.That(
             ScopesUnder(ProjectScope, line).SelectMany(one => one).SelectMany(t => t.Scopes),
-            Does.Not.Contain("keyword.other.profi-c"),
+            Does.Not.Contain("keyword.other.compass"),
             line);
 
     /// <summary>
@@ -238,11 +238,11 @@ public sealed class TokenizationTests : EditorTestBase
         {
             Assert.That(
                 Carried(ScopesUnder(ProjectScope, "    output ../artifacts"), "../artifacts"),
-                Does.Contain("string.unquoted.path.profi-c"));
+                Does.Contain("string.unquoted.path.compass"));
 
             Assert.That(
                 Carried(ScopesUnder(ProjectScope, "    entry Tools.Program"), "Tools.Program"),
-                Does.Contain("entity.name.type.profi-c"));
+                Does.Contain("entity.name.type.compass"));
         });
     }
 }

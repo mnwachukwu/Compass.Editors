@@ -1,4 +1,4 @@
-// Applies the extension's own .pcp edits, so a test asserts on what the commands will write.
+// Applies the extension's own .cmp edits, so a test asserts on what the commands will write.
 //
 // The editing functions take text and give text back, so nothing here stubs the editor and
 // nothing writes a file. Reads a JSON array of requests on standard input and writes a JSON array

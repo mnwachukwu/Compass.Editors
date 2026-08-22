@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
-  "name": "Profi-C Project",
-  "scopeName": "source.profi-c-project",
+  "name": "Compass Project",
+  "scopeName": "source.compass-project",
   "patterns": [
     { "include": "#comment-block" },
     { "include": "#comment-line" },
@@ -15,21 +15,21 @@
 
     "comment-block": {
       "comment": "The same two forms a program uses, so a project file is annotated the same way.",
-      "name": "comment.block.profi-c",
+      "name": "comment.block.compass",
       "begin": "##",
       "end": "##.*$"
     },
 
     "comment-line": {
-      "name": "comment.line.number-sign.profi-c",
+      "name": "comment.line.number-sign.compass",
       "match": "#.*$"
     },
 
     "header": {
       "match": "^\\s*(project)\\s+(\\S+)",
       "captures": {
-        "1": { "name": "keyword.other.profi-c" },
-        "2": { "name": "entity.name.type.profi-c" }
+        "1": { "name": "keyword.other.compass" },
+        "2": { "name": "entity.name.type.compass" }
       }
     },
 
@@ -37,8 +37,8 @@
       "comment": "The three lines whose argument is a place on disk. A word that is not part of the vocabulary is reported by the compiler, and is left unhighlighted here so that it looks as wrong as it is.",
       "match": "^\\s*(source|reference|output)\\s+(\\S+)",
       "captures": {
-        "1": { "name": "keyword.other.profi-c" },
-        "2": { "name": "string.unquoted.path.profi-c" }
+        "1": { "name": "keyword.other.compass" },
+        "2": { "name": "string.unquoted.path.compass" }
       }
     },
 
@@ -46,23 +46,23 @@
       "comment": "Which Program the build begins at. Scoped as a type rather than as a path, because that is what it is: the namespaces in front of the type and the type, written as a 'using' would write it.",
       "match": "^\\s*(entry)\\s+(\\S+)",
       "captures": {
-        "1": { "name": "keyword.other.profi-c" },
-        "2": { "name": "entity.name.type.profi-c" }
+        "1": { "name": "keyword.other.compass" },
+        "2": { "name": "entity.name.type.compass" }
       }
     },
 
     "ignore": {
       "comment": "What every file the project builds should stop being told. The argument is accepted exactly where the compiler accepts one — a severity or a diagnostic — so a line naming anything else stays unhighlighted, which is what the compiler says about it too.",
-      "match": "^\\s*(ignore)\\s+(warning|opinion|[Pp][Cc][0-9]{4})\\b",
+      "match": "^\\s*(ignore)\\s+(warning|opinion|[Cc][Mm][0-9]{4})\\b",
       "captures": {
-        "1": { "name": "keyword.other.profi-c" },
-        "2": { "name": "constant.language.profi-c" }
+        "1": { "name": "keyword.other.compass" },
+        "2": { "name": "constant.language.compass" }
       }
     },
 
     "end": {
       "match": "^\\s*(end\\s+project)\\b",
-      "captures": { "1": { "name": "keyword.other.profi-c" } }
+      "captures": { "1": { "name": "keyword.other.compass" } }
     }
   }
 }

@@ -1,8 +1,8 @@
 {
-  "name": "profi-c",
-  "displayName": "Profi-C",
-  "description": "Syntax highlighting, debugging, and a language server for Profi-C.",
-  "version": "1.0.0",
+  "name": "compass",
+  "displayName": "Compass",
+  "description": "Syntax highlighting, debugging, and a language server for Compass.",
+  "version": "1.0.1",
   "publisher": "Pluperfect",
   "license": "MIT",
   "icon": "icon.png",
@@ -13,13 +13,13 @@
     "theme": "dark"
   },
 
-  "homepage": "https://profi-c.pluperfect.dev",
+  "homepage": "https://compass.pluperfect.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mnwachukwu/Profi-C.Editors"
+    "url": "https://github.com/mnwachukwu/Compass.Editors"
   },
   "bugs": {
-    "url": "https://github.com/mnwachukwu/Profi-C.Editors/issues"
+    "url": "https://github.com/mnwachukwu/Compass.Editors/issues"
   },
   "engines": {
     "vscode": "^1.91.0"
@@ -35,7 +35,7 @@
     "Formatters"
   ],
   "keywords": [
-    "profi-c",
+    "compass",
     "programming language",
     "introductory",
     "education",
@@ -45,124 +45,124 @@
     "fractions"
   ],
   "activationEvents": [
-    "onDebugResolve:profi-c",
-    "onDebugDynamicConfigurations:profi-c",
-    "onLanguage:profi-c",
-    "onLanguage:profi-c-project"
+    "onDebugResolve:compass",
+    "onDebugDynamicConfigurations:compass",
+    "onLanguage:compass",
+    "onLanguage:compass-project"
   ],
   "contributes": {
     "configurationDefaults": {
-      "[profi-c]": {
+      "[compass]": {
         "editor.formatOnType": true
       }
     },
     "languages": [
       {
-        "id": "profi-c",
+        "id": "compass",
         "aliases": [
-          "Profi-C",
-          "profi-c"
+          "Compass",
+          "compass"
         ],
         "extensions": [
-          ".pc"
+          ".cm"
         ],
         "configuration": "./language-configuration.json"
       },
       {
-        "id": "profi-c-project",
+        "id": "compass-project",
         "aliases": [
-          "Profi-C Project"
+          "Compass Project"
         ],
         "extensions": [
-          ".pcp"
+          ".cmp"
         ],
         "configuration": "./language-configuration.json"
       }
     ],
     "grammars": [
       {
-        "language": "profi-c",
-        "scopeName": "source.profi-c",
-        "path": "./syntaxes/profi-c.tmLanguage.json"
+        "language": "compass",
+        "scopeName": "source.compass",
+        "path": "./syntaxes/compass.tmLanguage.json"
       },
       {
-        "language": "profi-c-project",
-        "scopeName": "source.profi-c-project",
-        "path": "./syntaxes/profi-c-project.tmLanguage.json"
+        "language": "compass-project",
+        "scopeName": "source.compass-project",
+        "path": "./syntaxes/compass-project.tmLanguage.json"
       }
     ],
     "commands": [
       {
-        "command": "profi-c.runFile",
+        "command": "compass.runFile",
         "title": "Run this file",
-        "category": "Profi-C",
+        "category": "Compass",
         "icon": "$(play)"
       },
       {
-        "command": "profi-c.runProject",
+        "command": "compass.runProject",
         "title": "Run project associated with this file",
-        "category": "Profi-C",
+        "category": "Compass",
         "icon": "$(run-all)"
       },
       {
-        "command": "profi-c.buildFile",
+        "command": "compass.buildFile",
         "title": "Build this file",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.buildProject",
+        "command": "compass.buildProject",
         "title": "Build project associated with this file",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.newProject",
+        "command": "compass.newProject",
         "title": "New project",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.addToProject",
+        "command": "compass.addToProject",
         "title": "Add this file to a project",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.removeFromProject",
+        "command": "compass.removeFromProject",
         "title": "Remove this file from its project",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.setEntryPoint",
+        "command": "compass.setEntryPoint",
         "title": "Start the project at this file",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.setOutputFolder",
+        "command": "compass.setOutputFolder",
         "title": "Build this project into a folder",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.chooseTarget",
+        "command": "compass.chooseTarget",
         "title": "Choose the target platform",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.useTheColors",
-        "title": "Use the Profi-C colors",
-        "category": "Profi-C"
+        "command": "compass.useTheColors",
+        "title": "Use the Compass colors",
+        "category": "Compass"
       },
       {
-        "command": "profi-c.restartTheServer",
+        "command": "compass.restartTheServer",
         "title": "Restart the language server",
-        "category": "Profi-C"
+        "category": "Compass"
       },
       {
-        "command": "profi-c.stopTheServer",
+        "command": "compass.stopTheServer",
         "title": "Stop the language server",
-        "category": "Profi-C"
+        "category": "Compass"
       }
     ],
     "submenus": [
       {
-        "id": "profi-c.build",
+        "id": "compass.build",
         "label": "Build",
         "icon": "$(tools)"
       }
@@ -170,104 +170,104 @@
     "menus": {
       "editor/title/run": [
         {
-          "command": "profi-c.runFile",
+          "command": "compass.runFile",
           "group": "navigation@1",
-          "when": "resourceLangId == profi-c"
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.runProject",
+          "command": "compass.runProject",
           "group": "navigation@2",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         }
       ],
       "editor/title": [
         {
-          "submenu": "profi-c.build",
+          "submenu": "compass.build",
           "group": "navigation@-0.5",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         }
       ],
-      "profi-c.build": [
+      "compass.build": [
         {
-          "command": "profi-c.buildFile",
+          "command": "compass.buildFile",
           "group": "1_what@1",
-          "when": "resourceLangId == profi-c"
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.buildProject",
+          "command": "compass.buildProject",
           "group": "1_what@2"
         },
         {
-          "command": "profi-c.setOutputFolder",
+          "command": "compass.setOutputFolder",
           "group": "2_where@1",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         },
         {
-          "command": "profi-c.chooseTarget",
+          "command": "compass.chooseTarget",
           "group": "2_where@2"
         }
       ],
       "explorer/context": [
         {
-          "command": "profi-c.addToProject",
-          "group": "profi-c@1",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.addToProject",
+          "group": "compass@1",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.removeFromProject",
-          "group": "profi-c@2",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.removeFromProject",
+          "group": "compass@2",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.setEntryPoint",
-          "group": "profi-c@3",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.setEntryPoint",
+          "group": "compass@3",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.setOutputFolder",
-          "group": "profi-c@4",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "command": "compass.setOutputFolder",
+          "group": "compass@4",
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         }
       ],
       "commandPalette": [
         {
-          "command": "profi-c.runFile",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "command": "compass.runFile",
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         },
         {
-          "command": "profi-c.runProject",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "command": "compass.runProject",
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         },
         {
-          "command": "profi-c.addToProject",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.addToProject",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.removeFromProject",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.removeFromProject",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.setEntryPoint",
-          "when": "resourceLangId == profi-c"
+          "command": "compass.setEntryPoint",
+          "when": "resourceLangId == compass"
         },
         {
-          "command": "profi-c.setOutputFolder",
-          "when": "resourceLangId == profi-c || resourceLangId == profi-c-project"
+          "command": "compass.setOutputFolder",
+          "when": "resourceLangId == compass || resourceLangId == compass-project"
         }
       ]
     },
     "breakpoints": [
       {
-        "language": "profi-c"
+        "language": "compass"
       }
     ],
     "debuggers": [
       {
-        "type": "profi-c",
-        "label": "Profi-C",
+        "type": "compass",
+        "label": "Compass",
         "languages": [
-          "profi-c",
-          "profi-c-project"
+          "compass",
+          "compass-project"
         ],
         "configurationAttributes": {
           "launch": {
@@ -277,12 +277,12 @@
             "properties": {
               "program": {
                 "type": "string",
-                "description": "The .pc file or .pcp project to debug. Naming a .pc file debugs it together with the shared code beside it, the same way 'pc run' does.",
+                "description": "The .cm file or .cmp project to debug. Naming a .cm file debugs it together with the shared code beside it, the same way 'cm run' does.",
                 "default": "${file}"
               },
               "compilerPath": {
                 "type": "string",
-                "description": "The pc command to run for this configuration, overriding the profi-c.compilerPath setting."
+                "description": "The cm command to run for this configuration, overriding the compass.compilerPath setting."
               },
               "scope": {
                 "type": "string",
@@ -291,21 +291,21 @@
                   "project"
                 ],
                 "default": "file",
-                "description": "Whether to run the program named, or the .pcp project nearest it. 'project' looks upward from the program for one, and runs the program itself where there is none."
+                "description": "Whether to run the program named, or the .cmp project nearest it. 'project' looks upward from the program for one, and runs the program itself where there is none."
               }
             }
           }
         },
         "initialConfigurations": [
           {
-            "type": "profi-c",
+            "type": "compass",
             "request": "launch",
             "name": "Run this file",
             "program": "${file}",
             "internalConsoleOptions": "openOnSessionStart"
           },
           {
-            "type": "profi-c",
+            "type": "compass",
             "request": "launch",
             "name": "Run project associated with this file",
             "program": "${file}",
@@ -315,10 +315,10 @@
         ],
         "configurationSnippets": [
           {
-            "label": "Profi-C: run this file",
-            "description": "Runs whichever Profi-C file is in front of you when you start.",
+            "label": "Compass: run this file",
+            "description": "Runs whichever Compass file is in front of you when you start.",
             "body": {
-              "type": "profi-c",
+              "type": "compass",
               "request": "launch",
               "name": "Run this file",
               "program": "^\"\\${file}\"",
@@ -326,10 +326,10 @@
             }
           },
           {
-            "label": "Profi-C: run project associated with this file",
-            "description": "Runs the .pcp project nearest the open file, searching upward.",
+            "label": "Compass: run project associated with this file",
+            "description": "Runs the .cmp project nearest the open file, searching upward.",
             "body": {
-              "type": "profi-c",
+              "type": "compass",
               "request": "launch",
               "name": "Run project associated with this file",
               "program": "^\"\\${file}\"",
@@ -342,7 +342,7 @@
     ],
     "taskDefinitions": [
       {
-        "type": "profi-c",
+        "type": "compass",
         "required": [
           "scope"
         ],
@@ -353,7 +353,7 @@
               "file",
               "project"
             ],
-            "description": "Whether to build the open file, or the .pcp project nearest it."
+            "description": "Whether to build the open file, or the .cmp project nearest it."
           },
           "program": {
             "type": "string",
@@ -361,7 +361,7 @@
           },
           "runtime": {
             "type": "string",
-            "description": "The platform to build for. Defaults to the profi-c.targetPlatform setting, and to this machine where that is unset."
+            "description": "The platform to build for. Defaults to the compass.targetPlatform setting, and to this machine where that is unset."
           },
           "out": {
             "type": "string",
@@ -372,16 +372,16 @@
     ],
     "problemMatchers": [
       {
-        "name": "profi-c-error",
-        "owner": "profi-c",
-        "source": "profi-c",
+        "name": "compass-error",
+        "owner": "compass",
+        "source": "compass",
         "fileLocation": [
           "autoDetect",
           "${workspaceFolder}"
         ],
         "severity": "error",
         "pattern": {
-          "regexp": "^(.*)\\((\\d+),(\\d+)\\): error (PC\\d+): (.*)$",
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): error (CM\\d+): (.*)$",
           "file": 1,
           "line": 2,
           "column": 3,
@@ -390,16 +390,16 @@
         }
       },
       {
-        "name": "profi-c-warning",
-        "owner": "profi-c",
-        "source": "profi-c",
+        "name": "compass-warning",
+        "owner": "compass",
+        "source": "compass",
         "fileLocation": [
           "autoDetect",
           "${workspaceFolder}"
         ],
         "severity": "warning",
         "pattern": {
-          "regexp": "^(.*)\\((\\d+),(\\d+)\\): warning (PC\\d+): (.*)$",
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): warning (CM\\d+): (.*)$",
           "file": 1,
           "line": 2,
           "column": 3,
@@ -408,16 +408,16 @@
         }
       },
       {
-        "name": "profi-c-opinion",
-        "owner": "profi-c",
-        "source": "profi-c",
+        "name": "compass-opinion",
+        "owner": "compass",
+        "source": "compass",
         "fileLocation": [
           "autoDetect",
           "${workspaceFolder}"
         ],
         "severity": "info",
         "pattern": {
-          "regexp": "^(.*)\\((\\d+),(\\d+)\\): opinion (PC\\d+): (.*)$",
+          "regexp": "^(.*)\\((\\d+),(\\d+)\\): opinion (CM\\d+): (.*)$",
           "file": 1,
           "line": 2,
           "column": 3,
@@ -427,24 +427,24 @@
       }
     ],
     "configuration": {
-      "title": "Profi-C",
+      "title": "Compass",
       "properties": {
-        "profi-c.targetPlatform": {
+        "compass.targetPlatform": {
           "type": "string",
           "default": "",
-          "description": "The platform a build targets, as .NET names one — win-x64, linux-x64, osx-arm64. Empty means this machine. Choose from the ones installed with 'Profi-C: Choose the target platform', which only offers what can actually be built for."
+          "description": "The platform a build targets, as .NET names one — win-x64, linux-x64, osx-arm64. Empty means this machine. Choose from the ones installed with 'Compass: Choose the target platform', which only offers what can actually be built for."
         },
-        "profi-c.compilerPath": {
+        "compass.compilerPath": {
           "type": "string",
-          "default": "pc",
-          "description": "The Profi-C compiler to run when debugging. The default finds it on PATH, which is where installing Profi-C puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
+          "default": "cm",
+          "description": "The Compass compiler to run when debugging. The default finds it on PATH, which is where installing Compass puts it. Give a full path where it is installed somewhere else, or to debug against a build of the compiler itself."
         },
-        "profi-c.inlayHints.types": {
+        "compass.inlayHints.types": {
           "type": "boolean",
           "default": false,
-          "description": "Write in the type of a name the program gave none: a 'let', and the binding of each kind of loop. These are the only places in Profi-C where a type is not written down. Off by default, because a hint is text the editor writes into code nobody wrote — worth turning on while learning what the checker concludes from an initializer."
+          "description": "Write in the type of a name the program gave none: a 'let', and the binding of each kind of loop. These are the only places in Compass where a type is not written down. Off by default, because a hint is text the editor writes into code nobody wrote — worth turning on while learning what the checker concludes from an initializer."
         },
-        "profi-c.inlayHints.parameterNames": {
+        "compass.inlayHints.parameterNames": {
           "type": "boolean",
           "default": false,
           "description": "Write the name of the parameter in front of each argument of a call. Off by default: it repeats what hovering the argument already says, and it lands on every argument of every call. Worth turning on while reading unfamiliar code."

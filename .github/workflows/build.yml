@@ -20,21 +20,21 @@ jobs:
 
     steps:
       # Both repositories, side by side, because that is the layout the tests look for. The
-      # vocabulary the grammars are held to is a fact about the language, so Profi-C publishes
+      # vocabulary the grammars are held to is a fact about the language, so Compass publishes
       # it and this reads it from a sibling checkout rather than keeping a copy that could drift.
       - name: Check out
         uses: actions/checkout@v7
         with:
-          path: Profi-C.Editors
+          path: Compass.Editors
 
-      - name: Check out Profi-C
+      - name: Check out Compass
         uses: actions/checkout@v7
         with:
-          repository: mnwachukwu/Profi-C
-          path: Profi-C
+          repository: mnwachukwu/Compass
+          path: Compass
           # The token a job is given by default reaches the repository it was started from and
-          # no other. Where Profi-C is private, add a PROFI_C_TOKEN secret that can read it.
-          token: ${{ secrets.PROFI_C_TOKEN || github.token }}
+          # no other. Where Compass is private, add a COMPASS_TOKEN secret that can read it.
+          token: ${{ secrets.COMPASS_TOKEN || github.token }}
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v6
@@ -49,43 +49,43 @@ jobs:
       # Part of what the extension does is asked of the compiler rather than decided in
       # JavaScript — which project claims a file, what a file declares — so the tests holding it
       # to that need one to ask. They skip without it, and this job has no business skipping.
-      - name: Publish the Profi-C compiler
-        working-directory: Profi-C
-        run: dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist
+      - name: Publish the Compass compiler
+        working-directory: Compass
+        run: dotnet publish src/Compass.Cli.Alias -p:PublishProfile=dist
 
       # The TextMate engine VS Code itself tokenizes with, fetched rather than committed. The
-      # tests that put a .pc file through it skip until this has run.
+      # tests that put a .cm file through it skip until this has run.
       #
       # Run from the folder holding the manifest rather than pointing npm at it from above.
       # --prefix is documented as where *global* installs go, and whether a local install honors
       # it too varies by npm version — on the ones that do not, it installs against the working
       # directory instead and fails there for want of a package.json.
       - name: Install the TextMate engine
-        working-directory: Profi-C.Editors/vscode
+        working-directory: Compass.Editors/vscode
         run: npm install
 
       - name: Restore
-        working-directory: Profi-C.Editors
+        working-directory: Compass.Editors
         run: dotnet restore
 
       - name: Build
-        working-directory: Profi-C.Editors
+        working-directory: Compass.Editors
         run: dotnet build --no-restore --configuration Release -warnaserror
 
       - name: Test
-        working-directory: Profi-C.Editors
+        working-directory: Compass.Editors
         run: >
           dotnet test --no-build --configuration Release --verbosity normal
           --logger "trx;LogFileName=results.trx" --results-directory TestResults
 
       # Every test here that needs something fetched rather than committed skips without it —
-      # the TextMate engine, and Profi-C beside this. Skipping is right on a machine holding one
+      # the TextMate engine, and Compass beside this. Skipping is right on a machine holding one
       # repository and wrong here, because this job installs all of it. So a skip in CI means
       # something did not arrive and the test proved nothing, which is the hole the skip was
       # supposed to be a convenience about. Fail instead of reporting green.
       - name: Nothing skipped
         shell: pwsh
-        working-directory: Profi-C.Editors
+        working-directory: Compass.Editors
         run: |
           $results = Get-ChildItem TestResults -Filter *.trx -Recurse
           if (-not $results) { throw "No test results were written; the test step ran nothing." }

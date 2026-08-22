@@ -13,5 +13,5 @@ jobs:
     uses: ./.github/workflows/build.yml
     with:
       os: windows-latest
-    # For PROFI_C_TOKEN, which the checkout of Profi-C falls back from where it is unset.
+    # For COMPASS_TOKEN, which the checkout of Compass falls back from where it is unset.
     secrets: inherit

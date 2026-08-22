@@ -1,10 +1,10 @@
-# Profi-C for VS Code
+# Compass for VS Code
 
-Everything you need to write [Profi-C](https://profi-c.pluperfect.dev) in VS Code: it colors it,
+Everything you need to write [Compass](https://compass.pluperfect.dev) in VS Code: it colors it,
 tells you what is wrong as you type, completes what you are reaching for, and runs it under a
 debugger.
 
-Profi-C is an introductory programming language — exact fractions, no null, and errors that name
+Compass is an introductory programming language — exact fractions, no null, and errors that name
 the fix.
 
 ## What you get
@@ -20,13 +20,13 @@ rename across a whole project.
 **A debugger.** Breakpoints, stepping over and into, a call stack, a variables pane, and a Debug
 Console that a program asking for input can be typed into.
 
-**Projects.** Build and run a `.pcp` project from the editor, and ask which project claims the
+**Projects.** Build and run a `.cmp` project from the editor, and ask which project claims the
 file you are looking at.
 
-**Formatting.** The same rules `pc format` applies, so the editor and the command line never
+**Formatting.** The same rules `cm format` applies, so the editor and the command line never
 disagree about a file.
 
-**Highlighting** for `.pc` programs and `.pcp` project files, with bracket matching, `Ctrl+/`
+**Highlighting** for `.cm` programs and `.cmp` project files, with bracket matching, `Ctrl+/`
 commenting, auto-closing quotes, and indentation that follows `end`.
 
 ## Before you start
@@ -35,33 +35,33 @@ commenting, auto-closing quotes, and indentation that follows `end`.
 extension does not carry its own copy, so what you get in the editor is always what your compiler
 does.
 
-    pc --version
+    cm --version
 
 If that answers, you are set. If it does not, [install
-Profi-C](https://profi-c.pluperfect.dev/install) first.
+Compass](https://compass.pluperfect.dev/install) first.
 
 ## Getting going
 
-1. Open a folder with a `.pc` file in it, or make one.
+1. Open a folder with a `.cm` file in it, or make one.
 2. Start typing. Highlighting and diagnostics need nothing configured.
 3. Press **F5** to run it under the debugger. No `launch.json` is required for a single file.
 
-There is a **Profi-C: Restart the server** command for the rare case where the compiler is
+There is a **Compass: Restart the server** command for the rare case where the compiler is
 replaced while the editor is open.
 
 ## Colors
 
 The extension ships no theme, on purpose — a theme that repaints your whole editor for one
-language is a poor trade. It scopes Profi-C precisely enough that any theme colors it sensibly,
-and there is a **Profi-C: Apply the palette** command that writes a Profi-C-only block into your
+language is a poor trade. It scopes Compass precisely enough that any theme colors it sensibly,
+and there is a **Compass: Apply the palette** command that writes a Compass-only block into your
 settings if you want the language's own colors.
 
 ## More
 
-- [Everything the extension does, in full](https://github.com/mnwachukwu/Profi-C.Editors/blob/main/docs/the-extension.md)
-- [The language](https://profi-c.pluperfect.dev) — a course, a playground that runs in the
+- [Everything the extension does, in full](https://github.com/mnwachukwu/Compass.Editors/blob/main/docs/the-extension.md)
+- [The language](https://compass.pluperfect.dev) — a course, a playground that runs in the
   browser, samples, and the reference
-- [Source](https://github.com/mnwachukwu/Profi-C.Editors) · [Report a
-  problem](https://github.com/mnwachukwu/Profi-C.Editors/issues)
+- [Source](https://github.com/mnwachukwu/Compass.Editors) · [Report a
+  problem](https://github.com/mnwachukwu/Compass.Editors/issues)
 
 MIT licensed.

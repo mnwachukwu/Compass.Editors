@@ -1,20 +1,20 @@
-# Profi-C.Editors
+# Compass.Editors
 
-[![CI (Windows)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-windows.yml)
-[![CI (Linux)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/mnwachukwu/Profi-C.Editors/actions/workflows/ci-linux.yml)
+[![CI (Windows)](https://github.com/mnwachukwu/Compass.Editors/actions/workflows/ci-windows.yml/badge.svg)](https://github.com/mnwachukwu/Compass.Editors/actions/workflows/ci-windows.yml)
+[![CI (Linux)](https://github.com/mnwachukwu/Compass.Editors/actions/workflows/ci-linux.yml/badge.svg)](https://github.com/mnwachukwu/Compass.Editors/actions/workflows/ci-linux.yml)
 
-Editor support for [Profi-C](https://github.com/mnwachukwu/Profi-C): the VS Code extension, and
+Editor support for [Compass](https://github.com/mnwachukwu/Compass): the VS Code extension, and
 the tooling that will grow around it.
 
 The language itself — the compiler, the interpreter, the specification, the samples — lives in
-the Profi-C repository. Nothing here compiles Profi-C. This repository is about what an editor
-does with a `.pc` file before and while the compiler is involved.
+the Compass repository. Nothing here compiles Compass. This repository is about what an editor
+does with a `.cm` file before and while the compiler is involved.
 
 ## What is here
 
 | | |
 |---|---|
-| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.pc` and `.pcp`, the language configuration, the debugger, Run and Build buttons, the Outline, and the color palette |
+| [vscode/](vscode) | The VS Code extension: TextMate grammars for `.cm` and `.cmp`, the language configuration, the debugger, Run and Build buttons, the Outline, and the color palette |
 | [tests/](tests) | What the grammars actually do, run through the engine VS Code runs, and what the manifest and the extension agree about |
 
 ## Debugging, and where its two halves live
@@ -23,12 +23,12 @@ Breakpoints, stepping, a call stack and a variables pane all work. **Almost none
 this repository**, and that is the design rather than an accident.
 
 Everything about *how* to debug — where to stop, what counts as one step, which names are worth
-showing — is in Profi-C, in an adapter that speaks the Debug Adapter Protocol over its standard
-input and output. It is reached with `pc debug` and it works with any client that speaks the
+showing — is in Compass, in an adapter that speaks the Debug Adapter Protocol over its standard
+input and output. It is reached with `cm debug` and it works with any client that speaks the
 protocol, VS Code being one of them.
 
 What is here is the little that must be. VS Code can be told declaratively that a debugger
-exists, but not to run whatever `pc` the reader has installed — the path a manifest names is
+exists, but not to run whatever `cm` the reader has installed — the path a manifest names is
 resolved inside the extension folder, and the compiler is not in there. So
 [`vscode/extension.js`](vscode/extension.js) starts the adapter, and offers a configuration to
 anyone who has not written a launch.json.
@@ -39,41 +39,41 @@ question about them, and the second one is always the one that is out of date.
 ## What is asked, and what is decided here
 
 The extension has grown past the debugger — Run and Build buttons, a target platform, the
-Outline, the palette — and the line that keeps it honest is this: **anything with a Profi-C
-answer is asked of `pc` rather than worked out here.**
+Outline, the palette — and the line that keeps it honest is this: **anything with a Compass
+answer is asked of `cm` rather than worked out here.**
 
 | Question | Asked with |
 |---|---|
-| What does this file declare? | `pc outline` |
-| Which `.pcp` builds this file? | `pc project` |
-| Which platforms can be built for? | `pc platforms` |
-| What words does the language reserve? | `pc vocabulary`, read by the tests |
-| Where should this stop, and what is in scope? | `pc debug`, which is the whole adapter |
+| What does this file declare? | `cm outline` |
+| Which `.cmp` builds this file? | `cm project` |
+| Which platforms can be built for? | `cm platforms` |
+| What words does the language reserve? | `cm vocabulary`, read by the tests |
+| Where should this stop, and what is in scope? | `cm debug`, which is the whole adapter |
 
-Each could have been written in JavaScript, and each would then be a second definition of Profi-C
+Each could have been written in JavaScript, and each would then be a second definition of Compass
 that agreed with the first until somebody added a construct. That failure is silent: a member
 stops appearing in the Outline, a keyword stops being colored, and nothing reports it.
 
-Membership was written here once, and is the reason the table has a row for it. Reading a `.pcp`
+Membership was written here once, and is the reason the table has a row for it. Reading a `.cmp`
 by scanning lines for the word `source` looks right and is not: it counts a `source` inside a
 `##` comment, and one written after `end project`, both of which the compiler ignores. The button
 would then compile and run a program the reader was not looking at — and look exactly like the
 button working, which is the failure this whole arrangement exists to prevent.
 
 **One thing here writes a format the compiler owns, and it is worth naming rather than glossing
-over.** The project commands put a `source` line into a `.pcp`, take one out, and replace an
+over.** The project commands put a `source` line into a `.cmp`, take one out, and replace an
 `entry` — so [projects.js](vscode/projects.js) is the only file in this repository that composes
-Profi-C's own syntax.
+Compass's own syntax.
 
 Three things keep it from being the second reader everything above refuses. **Nothing is read to
-decide anything** — which project claims a file is still `pc project`, and what a file declares is
-still `pc outline`. **Nothing is rewritten wholesale**: a source goes in before `end project`, a
+decide anything** — which project claims a file is still `cm project`, and what a file declares is
+still `cm outline`. **Nothing is rewritten wholesale**: a source goes in before `end project`, a
 source comes out by the line naming it, and a line the editing does not recognize is left exactly
 as it was, so a format that gains a word gains it here for free. And **the language server
 validates the result**, so an edit that lands wrong is in the Problems panel before the reader has
 looked away.
 
-Anything needing more understanding of the format than that belongs in `pc` instead.
+Anything needing more understanding of the format than that belongs in `cm` instead.
 
 ## What is planned
 
@@ -83,32 +83,32 @@ is the ordinary business of using it and fixing what that turns up.
 **The language server itself is done** — live diagnostics as you type, hover types, go to
 definition, completion both after a dot and for a bare name, signature help, quick fixes, rename,
 coloring every name for what the compiler worked out it is, marking every use of the name under
-the caret, and formatting. What it does and how much of it is `pc` rather than JavaScript is in
+the caret, and formatting. What it does and how much of it is `cm` rather than JavaScript is in
 [the full account of the extension](docs/the-extension.md). The
 [listing](vscode/README.md) beside it is the short version, written for somebody deciding
 whether to install it.
 
-## The vocabulary, and why the tests need Profi-C beside them
+## The vocabulary, and why the tests need Compass beside them
 
 The grammars claim to color every word the language reserves. That claim is worth checking, and
 checking it means knowing what the language reserves — which is a fact about the *other*
 repository.
 
-Profi-C publishes it. `pc vocabulary` prints every reserved word and every built-in type name as
+Compass publishes it. `cm vocabulary` prints every reserved word and every built-in type name as
 JSON, and the result is committed there as `docs/vocabulary.json`. The tests here read that file
 **from a sibling checkout**:
 
 ```
 D:\Repos\
-    Profi-C\           <- the language
-    Profi-C.Editors\   <- this
+    Compass\           <- the language
+    Compass.Editors\   <- this
 ```
 
 A copy was deliberately not taken. A copy drifts, and a drifting copy is exactly the failure the
 published file exists to prevent — the grammar would agree with a list that was itself out of
 date, and nothing anywhere would fail.
 
-**Where Profi-C is not beside this, those tests skip rather than fail**, since a checkout of one
+**Where Compass is not beside this, those tests skip rather than fail**, since a checkout of one
 repository alone is an ordinary state to be in. Everything else still runs.
 
 CI checks out both, and then **fails if anything skipped at all**. That second half is what keeps
@@ -119,7 +119,7 @@ grammar to the language would otherwise be indistinguishable from a run that pas
 
 **Press F5.** A second VS Code window opens with the extension loaded straight out of `vscode/`,
 and reloading that window (`Ctrl+R`) picks up whatever was just edited. Two configurations sit in
-[.vscode/launch.json](.vscode/launch.json) — one on an empty window, one with Profi-C's samples
+[.vscode/launch.json](.vscode/launch.json) — one on an empty window, one with Compass's samples
 already open, which is the one to use when the change is to the grammar and you need code in
 front of you.
 
@@ -136,7 +136,7 @@ npx @vscode/vsce package
 ```
 
 ```bash
-code --install-extension profi-c-1.0.0.vsix --force
+code --install-extension compass-1.0.0.vsix --force
 ```
 
 `--force` is the part that matters. Without it the install is refused as already present, and a
@@ -166,19 +166,19 @@ manifest is absent from the menu for a reason recorded only in an extension host
 
 ## Installing it
 
-From the Marketplace, as `Pluperfect.profi-c` — in VS Code, search the Extensions view for
-Profi-C, or:
+From the Marketplace, as `Pluperfect.compass` — in VS Code, search the Extensions view for
+Compass, or:
 
 ```bash
-code --install-extension Pluperfect.profi-c
+code --install-extension Pluperfect.compass
 ```
 
 **It needs the compiler.** The grammar colors a file on its own, but the debugger, the language
-server and every build command run `pc`, so an extension installed beside no compiler colors
-code and does nothing else. [Installing Profi-C](https://profi-c.pluperfect.dev/install) is one
-command per platform and puts `pc` on your PATH.
+server and every build command run `cm`, so an extension installed beside no compiler colors
+code and does nothing else. [Installing Compass](https://compass.pluperfect.dev/install) is one
+command per platform and puts `cm` on your PATH.
 
-A `.vsix` is attached to [each release](https://github.com/mnwachukwu/Profi-C.Editors/releases)
+A `.vsix` is attached to [each release](https://github.com/mnwachukwu/Compass.Editors/releases)
 as well, for an offline machine or to pin a version.
 
 ## License

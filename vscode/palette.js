@@ -1,13 +1,13 @@
 'use strict';
 
-// Colors for Profi-C source.
+// Colors for Compass source.
 //
 // A TextMate grammar picks scopes rather than colors; a theme picks the colors. These rules sit
 // between the two, so the language reads the same whichever theme is on, and nobody has to
-// change their theme to read a .pc file.
+// change their theme to read a .cm file.
 //
 // They live with the extension rather than in a workspace's settings so that they travel with
-// it: installing the extension and running "Profi-C: Use the Profi-C colors" applies them to
+// it: installing the extension and running "Compass: Use the Compass colors" applies them to
 // every folder, once, instead of a file copied into each project.
 //
 // An extension cannot simply impose these. VS Code's model is that a theme owns colors and a
@@ -28,7 +28,7 @@ const rules = [
     // 'model', 'function', and 'let' share it: those three introduce a thing that then holds
     // something, which is the same kind of statement a type name makes.
     {
-        scope: ['storage.type.profi-c', 'keyword.declaration.profi-c'],
+        scope: ['storage.type.compass', 'keyword.declaration.compass'],
         settings: { foreground: '#9D7CD8' },
     },
 
@@ -42,10 +42,10 @@ const rules = [
     // Spelling them as words was the point, and this is the color words get.
     {
         scope: [
-            'storage.modifier.profi-c',
-            'keyword.other.profi-c',
-            'keyword.other.declaration.profi-c',
-            'keyword.operator.word.profi-c',
+            'storage.modifier.compass',
+            'keyword.other.compass',
+            'keyword.other.declaration.compass',
+            'keyword.operator.word.compass',
         ],
         settings: { foreground: '#569CD6' },
     },
@@ -53,7 +53,7 @@ const rules = [
     // A type a program declares, and one the language provides. The same color: which of the
     // two a name is matters far less than that it is a type.
     {
-        scope: ['entity.name.type.profi-c', 'support.class.profi-c'],
+        scope: ['entity.name.type.compass', 'support.class.compass'],
         settings: { foreground: '#4EC9B0' },
     },
 
@@ -62,7 +62,7 @@ const rules = [
     // Flow, and the closer that ends it. 'end while' matches 'while', so a block and its end
     // read as one thing.
     {
-        scope: ['keyword.control.profi-c', 'keyword.control.end.profi-c'],
+        scope: ['keyword.control.compass', 'keyword.control.end.compass'],
         settings: { foreground: '#C586C0' },
     },
 
@@ -71,7 +71,7 @@ const rules = [
     // A function, declared or called. Well away from flow: a call and a branch are the two
     // things a reader scans for, and telling them apart is most of reading a body.
     {
-        scope: ['entity.name.function.profi-c', 'entity.name.function.call.profi-c'],
+        scope: ['entity.name.function.compass', 'entity.name.function.call.compass'],
         settings: { foreground: '#DCDCAA' },
     },
 
@@ -86,7 +86,7 @@ const rules = [
     // Members are deliberately left alone here: 'this.' already marks them, and a color on top
     // of a prefix the language requires would be saying the same thing twice.
     {
-        scope: 'variable.parameter.profi-c',
+        scope: 'variable.parameter.compass',
         settings: { foreground: '#D0BFFF' },
     },
 
@@ -96,9 +96,9 @@ const rules = [
     // thing on its line, and warm enough to be found when it is not.
     {
         scope: [
-            'string.quoted.double.profi-c',
-            'string.quoted.single.profi-c',
-            'string.quoted.triple.profi-c',
+            'string.quoted.double.compass',
+            'string.quoted.single.compass',
+            'string.quoted.triple.compass',
         ],
         settings: { foreground: '#C4794A' },
     },
@@ -118,9 +118,9 @@ const rules = [
     // spent making the boundary visible.
     {
         scope: [
-            'meta.interpolation.profi-c',
-            'punctuation.section.interpolation.begin.profi-c',
-            'punctuation.section.interpolation.end.profi-c',
+            'meta.interpolation.compass',
+            'punctuation.section.interpolation.begin.compass',
+            'punctuation.section.interpolation.end.compass',
         ],
         settings: { foreground: '#D4D4D4' },
     },
@@ -129,7 +129,7 @@ const rules = [
     // the color an escape takes: a place inside a string where what is written is not what is
     // meant.
     {
-        scope: 'constant.other.format.profi-c',
+        scope: 'constant.other.format.compass',
         settings: { foreground: '#E6C07B' },
     },
 
@@ -138,30 +138,30 @@ const rules = [
     // comments.
     {
         scope: [
-            'constant.numeric.integer.profi-c',
-            'constant.numeric.real.profi-c',
-            'constant.numeric.float.profi-c',
-            'constant.numeric.fraction.profi-c',
+            'constant.numeric.integer.compass',
+            'constant.numeric.real.compass',
+            'constant.numeric.float.compass',
+            'constant.numeric.fraction.compass',
         ],
         settings: { foreground: '#E6C07B' },
     },
 
     {
-        scope: 'constant.language.profi-c',
+        scope: 'constant.language.compass',
         settings: { foreground: '#569CD6' },
     },
 
     // An escape has to stand out from the text around it, since it is the one place inside a
     // string where a character does not mean itself.
     {
-        scope: 'constant.character.escape.profi-c',
+        scope: 'constant.character.escape.compass',
         settings: { foreground: '#E6C07B' },
     },
 
     // Both comment forms together. A comment is a comment whichever mark opened it, and
     // splitting them would be the one distinction a reader has no use for.
     {
-        scope: ['comment.block.profi-c', 'comment.line.number-sign.profi-c'],
+        scope: ['comment.block.compass', 'comment.line.number-sign.compass'],
         settings: { foreground: '#4C9A5A' },
     },
 
@@ -169,14 +169,14 @@ const rules = [
     // Cyan, because it is the one thing inside a comment that something other than a reader
     // acts on, and the prose around it should not be mistaken for it.
     {
-        scope: 'constant.language.documentation.profi-c',
+        scope: 'constant.language.documentation.compass',
         settings: { foreground: '#00E5FF' },
     },
 
     // A line the compiler heeds, such as '# ignore opinion'. Addressed to the compiler rather
     // than to a reader, so it is set apart from the prose it sits among.
     {
-        scope: 'comment.line.number-sign.directive.profi-c',
+        scope: 'comment.line.number-sign.directive.compass',
         settings: { foreground: '#7A7A7A' },
     },
 ];
@@ -191,7 +191,7 @@ const rules = [
 // is what makes this an addition rather than a rewrite: everything the grammar already colors
 // well is left as it was, and these say the few things it could never have said.
 //
-// Written in the protocol's vocabulary rather than Profi-C's, so a reader who never runs the
+// Written in the protocol's vocabulary rather than Compass's, so a reader who never runs the
 // command still gets something sensible out of whatever theme they are on.
 const semanticRules = {
     // A parameter, wherever it is written.

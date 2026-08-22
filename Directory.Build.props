@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Shared settings, matching Profi-C's so that code moving between the two repositories
+    Shared settings, matching Compass's so that code moving between the two repositories
     is held to the same standard rather than a looser one.
   -->
 
@@ -15,12 +15,12 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Product>Profi-C</Product>
+    <Product>Compass</Product>
     <Authors>Matt Nwachukwu</Authors>
-    <Company>Profi-C</Company>
+    <Company>Pluperfect Development</Company>
     <Copyright>Copyright (c) Matt Nwachukwu</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <VersionPrefix>0.1.0</VersionPrefix>
+    <VersionPrefix>1.0.0</VersionPrefix>
   </PropertyGroup>
 
 </Project>

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <RootNamespace>ProfiC.Editors.Tests</RootNamespace>
-    <AssemblyName>ProfiC.Editors.Tests</AssemblyName>
+    <RootNamespace>Compass.Editors.Tests</RootNamespace>
+    <AssemblyName>Compass.Editors.Tests</AssemblyName>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <!--
-    Deliberately no reference to ProfiC.Compiler. What the language reserves arrives as
+    Deliberately no reference to Compass.Compiler. What the language reserves arrives as
     docs/vocabulary.json from a sibling checkout, so this repository builds and tests on
     its own and a keyword is never a two-repository change.
   -->

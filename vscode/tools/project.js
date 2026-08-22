@@ -3,7 +3,7 @@
 // The extension is loaded rather than reimplemented, with the editor stubbed out — so what this
 // reports is what the Run button will do, and not a second opinion that agrees with it today.
 //
-// The answer itself is the compiler's: the extension runs `pc project`, because reading a `.pcp`
+// The answer itself is the compiler's: the extension runs `cm project`, because reading a `.cmp`
 // here would be exactly the second reader that arrangement exists to avoid. So the compiler to
 // ask is the first argument, letting a test hold a build of it rather than whatever is on PATH.
 //
@@ -13,7 +13,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const compilerPath = process.argv[2] || 'pc';
+const compilerPath = process.argv[2] || 'cm';
 const extension = path.join(__dirname, '..', 'extension.js');
 
 const source = fs.readFileSync(extension, 'utf8')

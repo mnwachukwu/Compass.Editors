@@ -1,14 +1,14 @@
 'use strict';
 
-// The editor's half of debugging Profi-C.
+// The editor's half of debugging Compass.
 //
 // Everything about *how* to debug — where to stop, what counts as one step, which names to show
-// — lives in the Profi-C repository, in an adapter that speaks the Debug Adapter Protocol over
+// — lives in the Compass repository, in an adapter that speaks the Debug Adapter Protocol over
 // its standard input and output. None of it is repeated here, and none of it should be: two
 // implementations of the same decisions is two answers to every question about them.
 //
 // What is left is the little VS Code cannot do declaratively. A manifest can say a debugger
-// exists, but it cannot say "run whatever `pc` the reader has installed" — the path it names is
+// exists, but it cannot say "run whatever `cm` the reader has installed" — the path it names is
 // resolved inside the extension folder, and the compiler is not in there. So this file exists to
 // answer two questions: which command to run, and what to debug when nobody has written a
 // launch.json.
@@ -25,18 +25,18 @@ const projects = require('./projects');
  * debugger that is offered in the menu and then quietly does nothing, which is a bad way to
  * find out about a typo.
  */
-const DebuggerType = 'profi-c';
+const DebuggerType = 'compass';
 
 /**
  * The setting naming the compiler, matching `contributes.configuration` in package.json.
  */
-const CompilerPathSetting = 'profi-c.compilerPath';
+const CompilerPathSetting = 'compass.compilerPath';
 
 /** What to run when nothing says otherwise: the command a `dotnet tool` install puts on PATH. */
-const DefaultCompiler = 'pc';
+const DefaultCompiler = 'cm';
 
 /** The languages a debug session may be started from. A project file is launchable too. */
-const Debuggable = ['profi-c', 'profi-c-project'];
+const Debuggable = ['compass', 'compass-project'];
 
 /**
  * How the compiler writes every diagnostic: MSBuild's canonical form.
@@ -44,13 +44,13 @@ const Debuggable = ['profi-c', 'profi-c-project'];
  * The same shape the problem matchers in package.json read, and deliberately the same — a build
  * and a run disagreeing about how to read one message would be two parsers to keep true.
  */
-const Diagnostic = /^(.*)\((\d+),(\d+)\): (error|warning|opinion) (PC\d+): (.*)$/;
+const Diagnostic = /^(.*)\((\d+),(\d+)\): (error|warning|opinion) (CM\d+): (.*)$/;
 
 /** Where a refused run puts what the compiler said. See {@link problemsPanel}. */
 let collected;
 
 /**
- * The connection to `pc lsp`, or undefined where there is none.
+ * The connection to `cm lsp`, or undefined where there is none.
  *
  * Undefined is an ordinary state rather than a failure: a compiler too old to know the command
  * has no server to connect to, and everything else in this extension goes on working without one.
@@ -88,7 +88,7 @@ let activation;
  * that makes it, and nothing depends on the order the two happened in.
  */
 function problemsPanel() {
-    collected ??= vscode.languages.createDiagnosticCollection('profi-c');
+    collected ??= vscode.languages.createDiagnosticCollection('compass');
     return collected;
 }
 
@@ -145,19 +145,19 @@ function activate(context) {
             document => folded.delete(document.uri.toString())),
         foldLabel(),
 
-        vscode.commands.registerCommand('profi-c.runFile', file => start(file, ThisFile)),
-        vscode.commands.registerCommand('profi-c.runProject', file => start(file, TheProject)),
-        vscode.commands.registerCommand('profi-c.buildFile', file => build(file, ThisFile)),
-        vscode.commands.registerCommand('profi-c.buildProject', file => build(file, TheProject)),
-        vscode.commands.registerCommand('profi-c.newProject', newProject),
-        vscode.commands.registerCommand('profi-c.addToProject', file => listFile(file, true)),
-        vscode.commands.registerCommand('profi-c.removeFromProject', file => listFile(file, false)),
-        vscode.commands.registerCommand('profi-c.setEntryPoint', setEntryPoint),
-        vscode.commands.registerCommand('profi-c.setOutputFolder', setOutputFolder),
-        vscode.commands.registerCommand('profi-c.chooseTarget', chooseTarget),
-        vscode.commands.registerCommand('profi-c.useTheColors', useTheColors),
-        vscode.commands.registerCommand('profi-c.stopTheServer', stopTheServer),
-        vscode.commands.registerCommand('profi-c.restartTheServer', restartTheServer),
+        vscode.commands.registerCommand('compass.runFile', file => start(file, ThisFile)),
+        vscode.commands.registerCommand('compass.runProject', file => start(file, TheProject)),
+        vscode.commands.registerCommand('compass.buildFile', file => build(file, ThisFile)),
+        vscode.commands.registerCommand('compass.buildProject', file => build(file, TheProject)),
+        vscode.commands.registerCommand('compass.newProject', newProject),
+        vscode.commands.registerCommand('compass.addToProject', file => listFile(file, true)),
+        vscode.commands.registerCommand('compass.removeFromProject', file => listFile(file, false)),
+        vscode.commands.registerCommand('compass.setEntryPoint', setEntryPoint),
+        vscode.commands.registerCommand('compass.setOutputFolder', setOutputFolder),
+        vscode.commands.registerCommand('compass.chooseTarget', chooseTarget),
+        vscode.commands.registerCommand('compass.useTheColors', useTheColors),
+        vscode.commands.registerCommand('compass.stopTheServer', stopTheServer),
+        vscode.commands.registerCommand('compass.restartTheServer', restartTheServer),
 
         // Offered to tasks.json as well, so a project can pin a build the way it likes and
         // Ctrl+Shift+B finds one without anybody writing the command line out.
@@ -174,11 +174,11 @@ function activate(context) {
 /**
  * Connects to the compiler's language server, which answers about files as they are being typed.
  *
- * **Why a server rather than another command.** Everything else here runs `pc` and waits: the
+ * **Why a server rather than another command.** Everything else here runs `cm` and waits: the
  * outline, the project a file belongs to, the check before a run. Each reads the file *from
  * disk*, which is the only thing a separate process can do — so none of them can say anything
  * about the buffer in front of the reader, and half of what is in that buffer at any moment is
- * not valid Profi-C anyway. A server holds what the editor holds, and is told about each edit.
+ * not valid Compass anyway. A server holds what the editor holds, and is told about each edit.
  *
  * It also removes what dominates the cost. A whole-file re-analysis is a few milliseconds;
  * starting a process to do it is a few hundred, every time.
@@ -197,21 +197,21 @@ function startTheServer(context) {
     const run = { command: compiler(), args: ['lsp'] };
 
     client = new LanguageClient(
-        'profi-c',
-        'Profi-C',
+        'compass',
+        'Compass',
         { run, debug: run },
         {
             documentSelector: Debuggable.map(language => ({ scheme: 'file', language })),
 
             // Diagnostics for a file arrive against that file, so the panel is grouped the way
             // a reader expects even when the mistake is in something they never opened.
-            diagnosticCollectionName: 'profi-c',
+            diagnosticCollectionName: 'compass',
 
             // What the reader asked to be shown, sent at startup and again whenever it changes.
             // Without the second half, turning a hint off takes effect at the next restart —
             // which is nowhere, for somebody flipping the switch to see what it does.
-            initializationOptions: { 'profi-c': hintSettings() },
-            synchronize: { configurationSection: 'profi-c' },
+            initializationOptions: { 'compass': hintSettings() },
+            synchronize: { configurationSection: 'compass' },
             middleware: { provideFoldingRanges: rememberWhatEachFoldSays },
         });
 
@@ -326,7 +326,7 @@ function sayWhatIsFolded(editor) {
  * Stops the server, letting go of the compiler it is running.
  *
  * **This exists because a running server holds the file open.** On Windows a process cannot be
- * overwritten while it runs, so publishing a new `pc` over the one the server is using fails —
+ * overwritten while it runs, so publishing a new `cm` over the one the server is using fails —
  * and the only way out was to close the editor, which is a poor answer for anyone working on the
  * compiler itself. Stop, publish, restart.
  *
@@ -335,7 +335,7 @@ function sayWhatIsFolded(editor) {
  */
 async function stopTheServer() {
     if (!client) {
-        vscode.window.showInformationMessage('Profi-C: the language server is not running.');
+        vscode.window.showInformationMessage('Compass: the language server is not running.');
         return;
     }
 
@@ -351,11 +351,11 @@ async function stopTheServer() {
     }
 
     vscode.window.showInformationMessage(
-        'Profi-C: the language server has stopped. The compiler can now be replaced.');
+        'Compass: the language server has stopped. The compiler can now be replaced.');
 }
 
 /**
- * Stops the server if it is running and starts it again, on whatever `pc` is there now.
+ * Stops the server if it is running and starts it again, on whatever `cm` is there now.
  *
  * Started fresh rather than through the client's own restart, so that a compiler replaced since
  * the last start is the one that runs — and so that this works when nothing is running, which is
@@ -369,7 +369,7 @@ async function restartTheServer() {
 
     startTheServer(activation);
 
-    vscode.window.showInformationMessage('Profi-C: the language server has restarted.');
+    vscode.window.showInformationMessage('Compass: the language server has restarted.');
 }
 
 /**
@@ -379,13 +379,13 @@ async function restartTheServer() {
  * exists. VS Code merges the answers of every provider for a language, so registering this
  * beside a running server would show every declaration twice.
  *
- * What it loses is what a separate process cannot have: `pc outline` reads the file from disk, so
+ * What it loses is what a separate process cannot have: `cm outline` reads the file from disk, so
  * a document with unsaved edits outlines as it was last saved. The server has no such limit, and
- * removing this entirely is right once no compiler in use predates `pc lsp`.
+ * removing this entirely is right once no compiler in use predates `cm lsp`.
  */
 function outlineWithoutAServer() {
     return vscode.languages.registerDocumentSymbolProvider(
-        { language: 'profi-c' },
+        { language: 'compass' },
         { provideDocumentSymbols: outline });
 }
 
@@ -439,7 +439,7 @@ function outline(document) {
 
 /** One declaration, as the editor's idea of a symbol. */
 function asSymbol(entry) {
-    // The compiler counts lines and columns from one, as every Profi-C diagnostic does. The
+    // The compiler counts lines and columns from one, as every Compass diagnostic does. The
     // editor counts from zero. The conversion belongs here, at the boundary, rather than in a
     // compiler that would then disagree with its own error messages.
     const range = new vscode.Range(
@@ -485,7 +485,7 @@ function kindOf(kind) {
  * says nothing rather than repeating what the compiler would work out, and a project moved
  * between machines keeps building for whichever one it is on.
  */
-const TargetSetting = 'profi-c.targetPlatform';
+const TargetSetting = 'compass.targetPlatform';
 
 function target() {
     return vscode.workspace.getConfiguration().get(TargetSetting) || '';
@@ -498,14 +498,14 @@ function target() {
 function showTheTarget(context) {
     const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
 
-    item.command = 'profi-c.chooseTarget';
-    item.tooltip = 'The platform Profi-C builds for. Click to change.';
+    item.command = 'compass.chooseTarget';
+    item.tooltip = 'The platform Compass builds for. Click to change.';
 
     const paint = () => {
         const editor = vscode.window.activeTextEditor;
         const showing = editor && Debuggable.includes(editor.document.languageId);
 
-        item.text = `$(tools) Profi-C: ${target() || 'this machine'}`;
+        item.text = `$(tools) Compass: ${target() || 'this machine'}`;
 
         if (showing) {
             item.show();
@@ -535,7 +535,7 @@ const TheProject = 'project';
 /**
  * Reveal the Debug Console when a session starts.
  *
- * What a program prints is the whole of what most Profi-C programs do, so a run whose output
+ * What a program prints is the whole of what most Compass programs do, so a run whose output
  * lands in a panel nobody opened reads as a run that did nothing. Carried on the configuration
  * rather than set once somewhere, because it belongs to the act of running rather than to the
  * editor, and a hand-written launch.json inherits it by copying a line it can see.
@@ -548,7 +548,7 @@ const ShowTheConsole = 'openOnSessionStart';
  * Puts the reader where a waiting program is answered.
  *
  * A program is answered in the Debug Console, on the line at the foot of it. That box is meant for
- * evaluating an expression against a stopped program, which is a thing Profi-C has no way to write
+ * evaluating an expression against a stopped program, which is a thing Compass has no way to write
  * — so the adapter gives it to whatever is waiting to read instead, and answering a program is
  * typing directly under the question it asked.
  *
@@ -557,7 +557,7 @@ const ShowTheConsole = 'openOnSessionStart';
  * waiting until a line arrives or the session ends.
  */
 async function answerTheProgram(received) {
-    if (received.event !== 'profi-c/read') {
+    if (received.event !== 'compass/read') {
         return;
     }
 
@@ -658,7 +658,7 @@ async function build(file, scope) {
 }
 
 /**
- * Saves every Profi-C file with unsaved edits, before anything is compiled.
+ * Saves every Compass file with unsaved edits, before anything is compiled.
  *
  * **The compiler reads files, not buffers.** Without this, pressing Run after fixing a mistake
  * compiles the mistake: the diagnostics are about text the reader can no longer see, and the
@@ -666,12 +666,12 @@ async function build(file, scope) {
  * language ignoring them, which is the worst thing a Run button can do.
  *
  * Saving rather than handing the buffer over is the choice, and it buys something: what ran is
- * what is on disk, so `pc run` in a terminal gives the same answer as the button. A buffer piped
+ * what is on disk, so `cm run` in a terminal gives the same answer as the button. A buffer piped
  * to the compiler would produce a result nothing else could reproduce.
  *
- * Every Profi-C file rather than the open one, because a program is a compilation: editing
- * `Shelf.pc` and pressing Run in `Program.pc` has to compile the new `Shelf.pc`. And only
- * Profi-C files, since saving somebody's unrelated notes is not what they asked for.
+ * Every Compass file rather than the open one, because a program is a compilation: editing
+ * `Shelf.cm` and pressing Run in `Program.cm` has to compile the new `Shelf.cm`. And only
+ * Compass files, since saving somebody's unrelated notes is not what they asked for.
  *
  * A file never saved is left alone. It has no path to compile and saving it would open a dialog
  * nobody asked for; running it was never going to work.
@@ -779,7 +779,7 @@ function showProblems(found) {
         const entry = new vscode.Diagnostic(
             new vscode.Range(at, at), one.message, severityOf(one.severity));
 
-        entry.source = 'profi-c';
+        entry.source = 'compass';
         entry.code = one.code;
 
         gathered.entries.push(entry);
@@ -872,9 +872,9 @@ function buildTask(program, scope, runtime, out) {
         scope === TheProject
             ? `build ${path.basename(program)} (project)`
             : `build ${path.basename(program)}`,
-        'profi-c',
+        'compass',
         new vscode.ShellExecution(compiler(), args),
-        ['$profi-c-error', '$profi-c-warning', '$profi-c-opinion']);
+        ['$compass-error', '$compass-warning', '$compass-opinion']);
 
     task.group = vscode.TaskGroup.Build;
 
@@ -902,7 +902,7 @@ async function chooseTarget() {
 
     if (asked.error || asked.status !== 0) {
         vscode.window.showErrorMessage(
-            `Profi-C: '${command}' could not say which platforms it can build for. `
+            `Compass: '${command}' could not say which platforms it can build for. `
             + 'Check the compiler is installed and current.');
 
         return;
@@ -914,7 +914,7 @@ async function chooseTarget() {
         published = JSON.parse(asked.stdout);
     } catch {
         vscode.window.showErrorMessage(
-            `Profi-C: '${command}' answered something unreadable when asked for its platforms.`);
+            `Compass: '${command}' answered something unreadable when asked for its platforms.`);
 
         return;
     }
@@ -942,7 +942,7 @@ async function chooseTarget() {
     }
 
     const picked = await vscode.window.showQuickPick(offered, {
-        title: 'Profi-C: the platform to build for',
+        title: 'Compass: the platform to build for',
         placeHolder: 'Only platforms a launcher is installed for are offered',
     });
 
@@ -967,20 +967,20 @@ function compiler() {
  * one that quietly won.
  */
 function hintSettings() {
-    const asked = vscode.workspace.getConfiguration('profi-c.inlayHints');
+    const asked = vscode.workspace.getConfiguration('compass.inlayHints');
 
     return { inlayHints: { types: asked.get('types'), parameterNames: asked.get('parameterNames') } };
 }
 
 /**
- * Writes the Profi-C colors into the reader's own settings, for every folder rather than one.
+ * Writes the Compass colors into the reader's own settings, for every folder rather than one.
  *
  * An extension cannot impose token colors — VS Code's model is that a theme owns them, and the
  * ones offered through `configurationDefaults` are accepted and then ignored. Writing them where
  * a reader would have written them by hand is the supported way, and doing it from here is what
  * keeps the palette with the extension instead of in a file copied per project.
  *
- * Any Profi-C rule already there is replaced rather than added to, so running this twice leaves
+ * Any Compass rule already there is replaced rather than added to, so running this twice leaves
  * one copy, and rules for other languages are left exactly as they were.
  *
  * Two settings, because there are two kinds of color. The grammar's rules say what a run of
@@ -991,7 +991,7 @@ async function useTheColors() {
     const settings = vscode.workspace.getConfiguration();
     const current = settings.get('editor.tokenColorCustomizations') || {};
 
-    const others = (current.textMateRules || []).filter(rule => !isProfiC(rule));
+    const others = (current.textMateRules || []).filter(rule => !isCompass(rule));
 
     await settings.update(
         'editor.tokenColorCustomizations',
@@ -1005,7 +1005,7 @@ async function useTheColors() {
         'editor.semanticTokenColorCustomizations',
         {
             ...semantic,
-            rules: { ...(semantic.rules || {}), ...scopedToProfiC(palette.semanticRules) },
+            rules: { ...(semantic.rules || {}), ...scopedToCompass(palette.semanticRules) },
         },
         vscode.ConfigurationTarget.Global);
 
@@ -1013,38 +1013,38 @@ async function useTheColors() {
     // highlighting ships set to 'configuredByTheme', so a theme that does not ask for it turns
     // the whole feature off — the server answers, the colors are in settings, and the file looks
     // exactly as it did. Turned on for this language alone, so no other one is affected.
-    const forProfiC = vscode.workspace.getConfiguration().get('[profi-c]') || {};
+    const forCompass = vscode.workspace.getConfiguration().get('[compass]') || {};
 
     await settings.update(
-        '[profi-c]',
-        { ...forProfiC, 'editor.semanticHighlighting.enabled': true },
+        '[compass]',
+        { ...forCompass, 'editor.semanticHighlighting.enabled': true },
         vscode.ConfigurationTarget.Global);
 
     const total = palette.rules.length + Object.keys(palette.semanticRules).length;
 
     vscode.window.showInformationMessage(
-        `Profi-C: ${total} color rules are now in your user settings.`);
+        `Compass: ${total} color rules are now in your user settings.`);
 }
 
 /**
  * Narrows each semantic rule to this language, since the setting is shared by every one of them.
  *
  * A rule written as `variable` would color a local in C# and in TypeScript too. Written as
- * `variable:profi-c` it colors a local in a `.pc` file and nowhere else, which is the only
+ * `variable:compass` it colors a local in a `.cm` file and nowhere else, which is the only
  * version of this that is polite to install into somebody's global settings.
  */
-function scopedToProfiC(rules) {
+function scopedToCompass(rules) {
     return Object.fromEntries(
-        Object.entries(rules).map(([kind, color]) => [`${kind}:profi-c`, color]));
+        Object.entries(rules).map(([kind, color]) => [`${kind}:compass`, color]));
 }
 
-/** Whether a rule paints Profi-C, whichever of the two shapes its scope was written in. */
-function isProfiC(rule) {
+/** Whether a rule paints Compass, whichever of the two shapes its scope was written in. */
+function isCompass(rule) {
     const scopes = rule && rule.scope
         ? (Array.isArray(rule.scope) ? rule.scope : [rule.scope])
         : [];
 
-    return scopes.some(scope => String(scope).endsWith('.profi-c'));
+    return scopes.some(scope => String(scope).endsWith('.compass'));
 }
 
 /**
@@ -1061,7 +1061,7 @@ function debugWhatIsOpenWhereNothingSaysOtherwise(folder, configuration) {
 
         if (!open || !Debuggable.includes(open.document.languageId)) {
             // Undefined stops the session without reporting anything, which is right: nothing
-            // is broken, there is simply no Profi-C program in front of the reader to run.
+            // is broken, there is simply no Compass program in front of the reader to run.
             return undefined;
         }
 
@@ -1089,7 +1089,7 @@ function debugWhatIsOpenWhereNothingSaysOtherwise(folder, configuration) {
  * Points a configuration at the project that claims the file.
  *
  * "The project this file is in" is a claim about the project's contents, not about where it sits
- * on disk — a `.pcp` above a file lists what it builds, and a file it does not list is no more
+ * on disk — a `.cmp` above a file lists what it builds, and a file it does not list is no more
  * part of it than a file in another folder. Running the nearest one regardless would compile a
  * program the reader is not looking at, print its output, and look like the button working.
  *
@@ -1099,7 +1099,7 @@ function debugWhatIsOpenWhereNothingSaysOtherwise(folder, configuration) {
  */
 function withTheProjectInstead(configuration) {
     // A project named outright is already the answer; there is nothing to search for.
-    if (typeof configuration.program === 'string' && configuration.program.endsWith('.pcp')) {
+    if (typeof configuration.program === 'string' && configuration.program.endsWith('.cmp')) {
         return configuration;
     }
 
@@ -1115,8 +1115,8 @@ function withTheProjectInstead(configuration) {
     if (found.asked) {
         vscode.window.showInformationMessage(
             found.searched === 0
-                ? 'Profi-C: no project found — running this file.'
-                : 'Profi-C: no project lists this file — running the file itself.');
+                ? 'Compass: no project found — running this file.'
+                : 'Compass: no project lists this file — running the file itself.');
     }
 
     return configuration;
@@ -1127,7 +1127,7 @@ function withTheProjectInstead(configuration) {
 /**
  * Starts a project, by asking the compiler for one.
  *
- * `pc new --project` already writes a folder holding a `.pcp` and the program it builds, and it
+ * `cm new --project` already writes a folder holding a `.cmp` and the program it builds, and it
  * already refuses to write over anything. Writing a second copy of that here would be a second
  * answer to what a new project looks like, and the two would drift the first time the format
  * gained a word.
@@ -1137,7 +1137,7 @@ async function newProject() {
 
     if (!folder) {
         vscode.window.showInformationMessage(
-            'Profi-C: open a folder first — a new project is written into one.');
+            'Compass: open a folder first — a new project is written into one.');
 
         return;
     }
@@ -1161,12 +1161,12 @@ async function newProject() {
 
     if (made.error || made.status !== 0) {
         vscode.window.showErrorMessage(
-            `Profi-C: ${(made.stderr || '').trim() || whyItCannotDebug(compiler())}`);
+            `Compass: ${(made.stderr || '').trim() || whyItCannotDebug(compiler())}`);
 
         return;
     }
 
-    const project = vscode.Uri.joinPath(folder.uri, name, `${name}.pcp`);
+    const project = vscode.Uri.joinPath(folder.uri, name, `${name}.cmp`);
 
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(project));
 }
@@ -1177,15 +1177,15 @@ async function newProject() {
  * **Which project is the compiler's answer where there is one**, so adding a file already listed
  * says so rather than listing it twice. Where nothing claims it — which is the ordinary case for
  * a file somebody has just made, and the reason this command exists — the projects in the folder
- * are offered instead, and only the ones that could list it: a `.pcp` names what it builds by a
+ * are offered instead, and only the ones that could list it: a `.cmp` names what it builds by a
  * path relative to itself, so one sitting elsewhere cannot.
  */
 async function listFile(file, adding) {
     const path = require('path');
     const document = fileInFront(file);
 
-    if (!document || !document.fsPath.endsWith('.pc')) {
-        vscode.window.showInformationMessage('Profi-C: open a .pc file to add it to a project.');
+    if (!document || !document.fsPath.endsWith('.cm')) {
+        vscode.window.showInformationMessage('Compass: open a .cm file to add it to a project.');
         return;
     }
 
@@ -1196,8 +1196,8 @@ async function listFile(file, adding) {
     if (!project) {
         vscode.window.showInformationMessage(
             adding
-                ? 'Profi-C: no project here could list this file.'
-                : 'Profi-C: no project lists this file.');
+                ? 'Compass: no project here could list this file.'
+                : 'Compass: no project lists this file.');
 
         return;
     }
@@ -1215,8 +1215,8 @@ async function listFile(file, adding) {
         // project builds far beyond what was asked.
         vscode.window.showInformationMessage(
             adding
-                ? `Profi-C: ${path.basename(project)} already lists this file.`
-                : `Profi-C: ${path.basename(project)} does not name this file — a folder it lists`
+                ? `Compass: ${path.basename(project)} already lists this file.`
+                : `Compass: ${path.basename(project)} does not name this file — a folder it lists`
                   + ' brings it in.');
 
         return;
@@ -1225,23 +1225,23 @@ async function listFile(file, adding) {
     await write(opened, written);
 
     vscode.window.showInformationMessage(
-        `Profi-C: ${adding ? 'added to' : 'removed from'} ${path.basename(project)}.`);
+        `Compass: ${adding ? 'added to' : 'removed from'} ${path.basename(project)}.`);
 }
 
 /**
  * Makes the file in front of the reader the one its project starts at.
  *
  * The type rather than the file, because that is what `entry` names: two files may each declare a
- * `Program` and namespaces are what tell them apart. Asked of `pc outline`, which reports what a
+ * `Program` and namespaces are what tell them apart. Asked of `cm outline`, which reports what a
  * file declares — so the name written is the one the compiler will look for.
  */
 async function setEntryPoint(file) {
     const path = require('path');
     const document = fileInFront(file);
 
-    if (!document || !document.fsPath.endsWith('.pc')) {
+    if (!document || !document.fsPath.endsWith('.cm')) {
         vscode.window.showInformationMessage(
-            'Profi-C: open the .pc file whose program should start the project.');
+            'Compass: open the .cm file whose program should start the project.');
 
         return;
     }
@@ -1250,7 +1250,7 @@ async function setEntryPoint(file) {
 
     if (!project) {
         vscode.window.showInformationMessage(
-            'Profi-C: no project lists this file, so nothing starts at it.');
+            'Compass: no project lists this file, so nothing starts at it.');
 
         return;
     }
@@ -1259,7 +1259,7 @@ async function setEntryPoint(file) {
 
     if (!program) {
         vscode.window.showInformationMessage(
-            'Profi-C: this file declares no Program, so a project cannot start at it.');
+            'Compass: this file declares no Program, so a project cannot start at it.');
 
         return;
     }
@@ -1269,7 +1269,7 @@ async function setEntryPoint(file) {
 
     if (written === null) {
         vscode.window.showErrorMessage(
-            `Profi-C: ${path.basename(project)} has no 'end project' to write before.`);
+            `Compass: ${path.basename(project)} has no 'end project' to write before.`);
 
         return;
     }
@@ -1277,7 +1277,7 @@ async function setEntryPoint(file) {
     await write(opened, written);
 
     vscode.window.showInformationMessage(
-        `Profi-C: ${path.basename(project)} now starts at ${program}.`);
+        `Compass: ${path.basename(project)} now starts at ${program}.`);
 }
 
 /**
@@ -1287,7 +1287,7 @@ async function setEntryPoint(file) {
  * one of those out by hand is where a reader gets it wrong — the folder dialog knows where
  * everything is and this writes down the way between them.
  *
- * Works from either kind of file. A `.pcp` is the thing being edited, and a `.pc` is what the
+ * Works from either kind of file. A `.cmp` is the thing being edited, and a `.cm` is what the
  * reader is more often looking at when the thought occurs, so the project claiming it is found
  * the same way every other project command finds it.
  */
@@ -1297,18 +1297,18 @@ async function setOutputFolder(file) {
 
     if (!document) {
         vscode.window.showInformationMessage(
-            'Profi-C: open a project, or a file one lists, to say where its build goes.');
+            'Compass: open a project, or a file one lists, to say where its build goes.');
 
         return;
     }
 
-    const project = document.fsPath.endsWith('.pcp')
+    const project = document.fsPath.endsWith('.cmp')
         ? document.fsPath
         : projectClaiming(document.fsPath).project;
 
     if (!project) {
         vscode.window.showInformationMessage(
-            'Profi-C: no project lists this file. A loose file always builds into the bin '
+            'Compass: no project lists this file. A loose file always builds into the bin '
             + 'beside it.');
 
         return;
@@ -1331,7 +1331,7 @@ async function setOutputFolder(file) {
 
     if (folder.length === 0) {
         vscode.window.showInformationMessage(
-            'Profi-C: that is the folder the project is in. Pick one to build into, so what a '
+            'Compass: that is the folder the project is in. Pick one to build into, so what a '
             + 'tool made stays apart from what you wrote.');
 
         return;
@@ -1342,7 +1342,7 @@ async function setOutputFolder(file) {
 
     if (written === null) {
         vscode.window.showErrorMessage(
-            `Profi-C: ${path.basename(project)} has no 'end project' to write before.`);
+            `Compass: ${path.basename(project)} has no 'end project' to write before.`);
 
         return;
     }
@@ -1350,7 +1350,7 @@ async function setOutputFolder(file) {
     await write(opened, written);
 
     vscode.window.showInformationMessage(
-        `Profi-C: ${path.basename(project)} now builds into ${folder}.`);
+        `Compass: ${path.basename(project)} now builds into ${folder}.`);
 }
 
 /** The document a command was invoked on, whether from a menu or from the editor. */
@@ -1385,7 +1385,7 @@ async function projectToListIn(filePath) {
         return claiming;
     }
 
-    const found = (await vscode.workspace.findFiles('**/*.pcp', '**/node_modules/**'))
+    const found = (await vscode.workspace.findFiles('**/*.cmp', '**/node_modules/**'))
         .map(uri => uri.fsPath)
         .filter(project => projects.within(project, filePath));
 
@@ -1403,7 +1403,7 @@ async function projectToListIn(filePath) {
 /**
  * The qualified name of the `Program` a file declares, or undefined for a file declaring none.
  *
- * Read from `pc outline`, which is the compiler's account of what a file declares. Looking for
+ * Read from `cm outline`, which is the compiler's account of what a file declares. Looking for
  * the word in the text would find it in a comment and in a string, and would miss the namespace
  * that tells one `Program` from another.
  */
@@ -1455,7 +1455,7 @@ function found(entries, above) {
 /**
  * The nearest project that lists the file, and how many were read on the way.
  *
- * Asked of the compiler, because the answer depends on how a `.pcp` is read and reading one here
+ * Asked of the compiler, because the answer depends on how a `.cmp` is read and reading one here
  * would be a second reader of that format. The two would agree until the day they did not, and
  * that disagreement is silent in the worst direction: a project claims a file it does not build,
  * and pressing Run compiles a program nobody was looking at.
@@ -1494,7 +1494,7 @@ function projectClaiming(program) {
 /**
  * Starts the compiler's own debug adapter and lets VS Code talk to it.
  *
- * `pc debug` reads the protocol on its standard input and writes it back out, which is exactly
+ * `cm debug` reads the protocol on its standard input and writes it back out, which is exactly
  * the shape VS Code expects of an executable adapter. So nothing is translated here and no
  * second implementation of the protocol exists in JavaScript.
  */
@@ -1505,7 +1505,7 @@ function startTheCompilersAdapter(session) {
     const wrong = whyItCannotDebug(command);
 
     if (wrong) {
-        vscode.window.showErrorMessage(`Profi-C: ${wrong}`);
+        vscode.window.showErrorMessage(`Compass: ${wrong}`);
         return undefined;
     }
 
@@ -1538,12 +1538,12 @@ function whyItCannotDebug(command) {
 
     if (asked.error) {
         return `'${command}' could not be started (${asked.error.code || asked.error.message}). `
-            + 'Install the compiler, or name it in the profi-c.compilerPath setting.';
+            + 'Install the compiler, or name it in the compass.compilerPath setting.';
     }
 
     if (!`${asked.stdout || ''}${asked.stderr || ''}`.includes('debug')) {
         return `the compiler at '${command}' has no 'debug' command, so it is too old to debug `
-            + 'with. Update it, or point profi-c.compilerPath at a newer build.';
+            + 'with. Update it, or point compass.compilerPath at a newer build.';
     }
 
     return undefined;

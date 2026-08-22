@@ -1,4 +1,4 @@
-// Tokenizes lines of Profi-C with the grammar this extension ships, and prints
+// Tokenizes lines of Compass with the grammar this extension ships, and prints
 // the scopes each token carries.
 //
 // This exists because nothing else can answer the question. A test can read the
@@ -15,9 +15,9 @@
 // file's own grammar is reached:
 //
 //     echo '["# @summary: A thing."]' | node tools/scopes.js
-//     [[{"text":"# ","scopes":["source.profi-c","comment.line..."]}, ...]]
+//     [[{"text":"# ","scopes":["source.compass","comment.line..."]}, ...]]
 //
-//     echo '["source Program.pc"]' | node tools/scopes.js source.profi-c-project
+//     echo '["source Program.cm"]' | node tools/scopes.js source.compass-project
 
 const fs = require("node:fs");
 const path = require("node:path");
@@ -30,8 +30,8 @@ const here = path.dirname(__dirname);
 // rather than only the language's, because a project file is a thing a reader
 // looks at and its grammar had nothing checking what it colored.
 const grammars = {
-    "source.profi-c": "profi-c.tmLanguage.json",
-    "source.profi-c-project": "profi-c-project.tmLanguage.json",
+    "source.compass": "compass.tmLanguage.json",
+    "source.compass-project": "compass-project.tmLanguage.json",
 };
 
 async function main() {
@@ -58,7 +58,7 @@ async function main() {
     });
 
     const grammar = await registry.loadGrammar(
-        process.argv[2] ?? "source.profi-c");
+        process.argv[2] ?? "source.compass");
     const lines = JSON.parse(fs.readFileSync(0, "utf8"));
 
     // State is carried from one line to the next, which is what makes a block

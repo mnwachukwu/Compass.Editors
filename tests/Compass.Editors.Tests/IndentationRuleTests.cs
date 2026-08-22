@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Where the editor puts a line on its own, before anything is asked of the server.</para>
@@ -37,7 +37,7 @@ public sealed class IndentationRuleTests : EditorTestBase
     /// </para>
     /// <para><b>Read from the samples rather than from a list written here, which is the point.
     /// </b> A list would have been written the day the pattern was, and would have gone stale
-    /// beside it. The samples are laid out by hand and formatted by <c>pc format</c>, so a line
+    /// beside it. The samples are laid out by hand and formatted by <c>cm format</c>, so a line
     /// with a deeper line under it is a line that opened something — whatever the language has
     /// since grown.</para>
     /// <para>Only lines nothing can be mistaken about are read: no comment mark, no quotation
@@ -49,7 +49,7 @@ public sealed class IndentationRuleTests : EditorTestBase
     public void EveryLineThatOpensABodyIsRecognized()
     {
         string samples = Path.Combine(
-            ProfiCOrIgnore("check out Profi-C beside this repository to read its samples"),
+            CompassOrIgnore("check out Compass beside this repository to read its samples"),
             "samples");
 
         if (!Directory.Exists(samples))
@@ -61,7 +61,7 @@ public sealed class IndentationRuleTests : EditorTestBase
 
         List<string> unrecognized = [];
 
-        foreach (string file in Directory.EnumerateFiles(samples, "*.pc", SearchOption.AllDirectories))
+        foreach (string file in Directory.EnumerateFiles(samples, "*.cm", SearchOption.AllDirectories))
         {
             // The programs that do not compile, which are laid out to make a point rather than to
             // be read for one — one of them writes 'function' where a type belongs.

@@ -1,10 +1,10 @@
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Where things are, and what the language says it reserves.</para>
-/// <para>The second is a fact about the other repository. Profi-C publishes it — <c>pc
+/// <para>The second is a fact about the other repository. Compass publishes it — <c>cm
 /// vocabulary</c> prints every reserved word and built-in type name, and the result is committed
 /// there — and this reads that file from a sibling checkout rather than keeping a copy. A copy
 /// would drift, and a drifting copy is the failure the published file exists to prevent: the
@@ -38,8 +38,8 @@ public abstract class EditorTestBase
             }
 
             static bool IsRoot(DirectoryInfo directory) =>
-                File.Exists(Path.Combine(directory.FullName, "Profi-C.Editors.slnx"))
-                || File.Exists(Path.Combine(directory.FullName, "Profi-C.Editors.sln"));
+                File.Exists(Path.Combine(directory.FullName, "Compass.Editors.slnx"))
+                || File.Exists(Path.Combine(directory.FullName, "Compass.Editors.sln"));
 
             Assert.That(directory, Is.Not.Null, "could not locate the repository root");
             _repositoryRoot = directory!.FullName;
@@ -55,31 +55,31 @@ public abstract class EditorTestBase
 
     /// <summary>The grammar every test here is about.</summary>
     protected static string GrammarPath =>
-        Path.Combine(Extension, "syntaxes", "profi-c.tmLanguage.json");
+        Path.Combine(Extension, "syntaxes", "compass.tmLanguage.json");
 
     /// <summary>
-    /// <para>Profi-C, if it is checked out beside this.</para>
+    /// <para>Compass, if it is checked out beside this.</para>
     /// <para>Null where it is not, which is an ordinary state: a clone of one repository alone
     /// should still build and run everything that does not need the other.</para>
     /// </summary>
-    protected static string? ProfiCRoot
+    protected static string? CompassRoot
     {
         get
         {
             string beside = Path.Combine(
-                Directory.GetParent(RepositoryRoot)!.FullName, "Profi-C");
+                Directory.GetParent(RepositoryRoot)!.FullName, "Compass");
 
-            return File.Exists(Path.Combine(beside, "Profi-C.sln")) ? beside : null;
+            return File.Exists(Path.Combine(beside, "Compass.sln")) ? beside : null;
         }
     }
 
     /// <summary>
-    /// Profi-C's root, or an ignored test. <c>Assert.Ignore</c> throws but is not annotated as
+    /// Compass's root, or an ignored test. <c>Assert.Ignore</c> throws but is not annotated as
     /// such, so the throw afterwards is what tells the compiler this cannot fall through.
     /// </summary>
-    protected static string ProfiCOrIgnore(string why)
+    protected static string CompassOrIgnore(string why)
     {
-        if (ProfiCRoot is { } root)
+        if (CompassRoot is { } root)
         {
             return root;
         }
@@ -90,7 +90,7 @@ public abstract class EditorTestBase
     }
 
     /// <summary>
-    /// <para>A built <c>pc</c> to ask, or an ignored test.</para>
+    /// <para>A built <c>cm</c> to ask, or an ignored test.</para>
     /// <para>Some of what the extension does is not a decision of its own — which project claims
     /// a file is the compiler's answer, asked for rather than worked out here. Testing that the
     /// extension asks correctly therefore needs something to ask.</para>
@@ -100,17 +100,17 @@ public abstract class EditorTestBase
     /// </summary>
     protected static string CompilerOrIgnore()
     {
-        string profiC = ProfiCOrIgnore(
-            "check out Profi-C beside this repository for a compiler to ask");
+        string compass = CompassOrIgnore(
+            "check out Compass beside this repository for a compiler to ask");
 
         string published = Path.Combine(
-            profiC, "dist", OperatingSystem.IsWindows() ? "pc.exe" : "pc");
+            compass, "dist", OperatingSystem.IsWindows() ? "cm.exe" : "cm");
 
         if (!File.Exists(published))
         {
             Assert.Ignore(
                 $"{published} is missing; run "
-                + "'dotnet publish src/ProfiC.Cli.Alias -p:PublishProfile=dist' there");
+                + "'dotnet publish src/Compass.Cli.Alias -p:PublishProfile=dist' there");
         }
 
         return published;
@@ -120,7 +120,7 @@ public abstract class EditorTestBase
     /// <para>What a mismatch is being measured against, said out loud.</para>
     /// <para><b>These compare two repositories, so a failure has two explanations and only one of
     /// them is a fault here.</b> The vocabulary comes from a sibling checkout, and in CI that
-    /// checkout is of Profi-C's default branch at the moment this job started — so a commit here
+    /// checkout is of Compass's default branch at the moment this job started — so a commit here
     /// that lands minutes before the language change it goes with reads a vocabulary from before
     /// it. That happened with <c>float</c>: the grammar was right, the word was reserved, and the
     /// run still failed. Naming the count turns the same failure into one a reader can tell apart
@@ -129,13 +129,13 @@ public abstract class EditorTestBase
     /// </summary>
     protected static string Against(int words, string what) =>
         $"{what} (read against a vocabulary of {words} reserved words — if that number looks "
-        + "low, the Profi-C checkout beside this one is older than the change being tested)";
+        + "low, the Compass checkout beside this one is older than the change being tested)";
 
     /// <summary>Every word the language reserves and every type it provides.</summary>
     protected sealed record Published(string[] ReservedWords, string[] TypeNames);
 
     /// <summary>
-    /// <para>Reads the published vocabulary, or skips the test where Profi-C is not beside
+    /// <para>Reads the published vocabulary, or skips the test where Compass is not beside
     /// this.</para>
     /// <para>Skipped rather than failed, for the same reason the tokenization tests skip without
     /// their engine: the missing piece is fetched rather than committed, and its absence is a
@@ -143,14 +143,14 @@ public abstract class EditorTestBase
     /// </summary>
     protected static Published Vocabulary()
     {
-        string profiC = ProfiCOrIgnore(
-            "check out Profi-C beside this repository to hold the grammar to its vocabulary");
+        string compass = CompassOrIgnore(
+            "check out Compass beside this repository to hold the grammar to its vocabulary");
 
-        string path = Path.Combine(profiC, "docs", "vocabulary.json");
+        string path = Path.Combine(compass, "docs", "vocabulary.json");
 
         if (!File.Exists(path))
         {
-            Assert.Ignore($"{path} is missing; run 'pc vocabulary > docs/vocabulary.json' there");
+            Assert.Ignore($"{path} is missing; run 'cm vocabulary > docs/vocabulary.json' there");
         }
 
         using JsonDocument published = JsonDocument.Parse(File.ReadAllText(path));

@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Holds what publishing the extension is allowed to be.</para>
@@ -95,8 +95,8 @@ public sealed class ReleaseTests : EditorTestBase
     {
         Assert.Multiple(() =>
         {
-            Assert.That(Workflow, Does.Contain("vsce package --out profi-c.vsix"));
-            Assert.That(Workflow, Does.Contain("vsce publish --packagePath profi-c.vsix"));
+            Assert.That(Workflow, Does.Contain("vsce package --out compass.vsix"));
+            Assert.That(Workflow, Does.Contain("vsce publish --packagePath compass.vsix"));
         });
     }
 

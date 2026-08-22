@@ -1,11 +1,11 @@
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
-/// <para>What the project commands write into a <c>.pcp</c>.</para>
-/// <para><b>These are the only place in the extension that writes one of Profi-C's own file
+/// <para>What the project commands write into a <c>.cmp</c>.</para>
+/// <para><b>These are the only place in the extension that writes one of Compass's own file
 /// formats</b>, and everything else here is careful not to: which project claims a file, what a
 /// file declares, whether a program checks — all of those ask the compiler, precisely so no
 /// second reader exists to drift from the first.</para>
@@ -75,17 +75,17 @@ public sealed class ProjectEditingTests : EditorTestBase
     }
 
     /// <summary>A project as somebody would have written it, with the paths this machine uses.</summary>
-    private static string Project => Path.Combine(Folder, "storefront.pcp");
+    private static string Project => Path.Combine(Folder, "storefront.cmp");
 
-    private static string Folder => Path.Combine(Path.GetTempPath(), "profi-c-editing", "storefront");
+    private static string Folder => Path.Combine(Path.GetTempPath(), "compass-editing", "storefront");
 
     private static string Inside(params string[] parts) =>
         Path.Combine([Folder, .. parts]);
 
     private const string Storefront = """
         project Storefront
-            reference ../core/core.pcp
-            source Program.pc
+            reference ../core/core.cmp
+            source Program.cm
             source models
         end project
         """;
@@ -101,16 +101,16 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void AddingASourceKeepsTheOrderAndTheIndent()
     {
         string? written = Written(
-            new Edit("add", Storefront, Project, Inside("Shelf.pc"), null));
+            new Edit("add", Storefront, Project, Inside("Shelf.cm"), null));
 
         Assert.That(
             written,
             Is.EqualTo("""
                 project Storefront
-                    reference ../core/core.pcp
-                    source Program.pc
+                    reference ../core/core.cmp
+                    source Program.cm
                     source models
-                    source Shelf.pc
+                    source Shelf.cm
                 end project
                 """));
     }
@@ -125,11 +125,11 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void APathIsWrittenTheWayAProjectNamesOne()
     {
         string? written = Written(
-            new Edit("add", Storefront, Project, Inside("pricing", "Tax.pc"), null));
+            new Edit("add", Storefront, Project, Inside("pricing", "Tax.cm"), null));
 
         Assert.Multiple(() =>
         {
-            Assert.That(written, Does.Contain("source pricing/Tax.pc"));
+            Assert.That(written, Does.Contain("source pricing/Tax.cm"));
             Assert.That(written, Does.Not.Contain("\\"));
         });
     }
@@ -139,7 +139,7 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void AFileAlreadyListedIsNotListedAgain()
     {
         Assert.That(
-            Written(new Edit("add", Storefront, Project, Inside("Program.pc"), null)),
+            Written(new Edit("add", Storefront, Project, Inside("Program.cm"), null)),
             Is.Null);
     }
 
@@ -148,13 +148,13 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void RemovingASourceTakesOutOnlyThatLine()
     {
         string? written = Written(
-            new Edit("remove", Storefront, Project, Inside("Program.pc"), null));
+            new Edit("remove", Storefront, Project, Inside("Program.cm"), null));
 
         Assert.That(
             written,
             Is.EqualTo("""
                 project Storefront
-                    reference ../core/core.pcp
+                    reference ../core/core.cmp
                     source models
                 end project
                 """));
@@ -169,7 +169,7 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void AFileBroughtInByAFolderIsNotRemoved()
     {
         Assert.That(
-            Written(new Edit("remove", Storefront, Project, Inside("models", "Book.pc"), null)),
+            Written(new Edit("remove", Storefront, Project, Inside("models", "Book.cm"), null)),
             Is.Null);
     }
 
@@ -188,28 +188,28 @@ public sealed class ProjectEditingTests : EditorTestBase
     [Test]
     public void ALineEndsTheWayTheFileAlreadyDoes()
     {
-        const string Windows = "project Storefront\r\n    source Program.pc\r\nend project\r\n";
-        const string Unix = "project Storefront\n    source Program.pc\nend project\n";
+        const string Windows = "project Storefront\r\n    source Program.cm\r\nend project\r\n";
+        const string Unix = "project Storefront\n    source Program.cm\nend project\n";
 
         Assert.Multiple(() =>
         {
             Assert.That(
-                Written(new Edit("add", Windows, Project, Inside("Shelf.pc"), null)),
+                Written(new Edit("add", Windows, Project, Inside("Shelf.cm"), null)),
                 Is.EqualTo(
-                    "project Storefront\r\n    source Program.pc\r\n    source Shelf.pc\r\n"
+                    "project Storefront\r\n    source Program.cm\r\n    source Shelf.cm\r\n"
                     + "end project\r\n"));
 
             Assert.That(
-                Written(new Edit("add", Unix, Project, Inside("Shelf.pc"), null)),
+                Written(new Edit("add", Unix, Project, Inside("Shelf.cm"), null)),
                 Is.EqualTo(
-                    "project Storefront\n    source Program.pc\n    source Shelf.pc\nend project\n"));
+                    "project Storefront\n    source Program.cm\n    source Shelf.cm\nend project\n"));
 
             // Whole, not "contains": every CRLF holds an LF, so asking for the absence of one
             // finds it in the very ending that is correct.
             Assert.That(
                 Written(new Edit("entry", Windows, Project, null, "Shop.Program")),
                 Is.EqualTo(
-                    "project Storefront\r\n    entry Shop.Program\r\n    source Program.pc\r\n"
+                    "project Storefront\r\n    entry Shop.Program\r\n    source Program.cm\r\n"
                     + "end project\r\n"));
         });
     }
@@ -223,8 +223,8 @@ public sealed class ProjectEditingTests : EditorTestBase
         const string Started = """
             project Tools
                 entry Tools.Program
-                source Tools.pc
-                source App.pc
+                source Tools.cm
+                source App.cm
             end project
             """;
 
@@ -233,8 +233,8 @@ public sealed class ProjectEditingTests : EditorTestBase
             Is.EqualTo("""
                 project Tools
                     entry App.Program
-                    source Tools.pc
-                    source App.pc
+                    source Tools.cm
+                    source App.cm
                 end project
                 """));
     }
@@ -247,9 +247,9 @@ public sealed class ProjectEditingTests : EditorTestBase
             Written(new Edit("entry", Storefront, Project, null, "Shop.Program")),
             Is.EqualTo("""
                 project Storefront
-                    reference ../core/core.pcp
+                    reference ../core/core.cmp
                     entry Shop.Program
-                    source Program.pc
+                    source Program.cm
                     source models
                 end project
                 """));
@@ -269,8 +269,8 @@ public sealed class ProjectEditingTests : EditorTestBase
             Written(new Edit("output", Storefront, Project, null, "../artifacts/storefront")),
             Is.EqualTo("""
                 project Storefront
-                    reference ../core/core.pcp
-                    source Program.pc
+                    reference ../core/core.cmp
+                    source Program.cm
                     source models
                     output ../artifacts/storefront
                 end project
@@ -279,7 +279,7 @@ public sealed class ProjectEditingTests : EditorTestBase
 
     /// <summary>
     /// One already written is replaced where it stands rather than joined by a second. A project
-    /// is written to one place, so two <c>output</c> lines is `PC0629` — an edit that added one
+    /// is written to one place, so two <c>output</c> lines is `CM0629` — an edit that added one
     /// would break the file it was asked to change.
     /// </summary>
     [Test]
@@ -287,7 +287,7 @@ public sealed class ProjectEditingTests : EditorTestBase
     {
         const string Somewhere = """
             project Storefront
-                source Program.pc
+                source Program.cm
                 output bin
                 source models
             end project
@@ -297,7 +297,7 @@ public sealed class ProjectEditingTests : EditorTestBase
             Written(new Edit("output", Somewhere, Project, null, "../artifacts")),
             Is.EqualTo("""
                 project Storefront
-                    source Program.pc
+                    source Program.cm
                     output ../artifacts
                     source models
                 end project
@@ -310,7 +310,7 @@ public sealed class ProjectEditingTests : EditorTestBase
     /// </summary>
     [Test]
     public void AnOutputNeedsSomewhereToGo() => Assert.That(
-        Written(new Edit("output", "project Storefront\n    source Program.pc", Project, null, "bin")),
+        Written(new Edit("output", "project Storefront\n    source Program.cm", Project, null, "bin")),
         Is.Null);
 
     // ---- What is left alone --------------------------------------------------------------------
@@ -327,23 +327,23 @@ public sealed class ProjectEditingTests : EditorTestBase
             project Storefront
                 ignore opinion
                 somethingAddedLater whatever it takes
-                source Program.pc
+                source Program.cm
             end project
             """;
 
-        string? written = Written(new Edit("add", Later, Project, Inside("Shelf.pc"), null));
+        string? written = Written(new Edit("add", Later, Project, Inside("Shelf.cm"), null));
 
         Assert.Multiple(() =>
         {
             Assert.That(written, Does.Contain("ignore opinion"));
             Assert.That(written, Does.Contain("somethingAddedLater whatever it takes"));
-            Assert.That(written, Does.Contain("source Shelf.pc"));
+            Assert.That(written, Does.Contain("source Shelf.cm"));
         });
     }
 
     /// <summary>
     /// <para>A project may only list what sits under it, so nothing else is offered one.</para>
-    /// <para>A <c>.pcp</c> names what it builds by a path relative to itself. A file above it
+    /// <para>A <c>.cmp</c> names what it builds by a path relative to itself. A file above it
     /// would be listed as <c>../..</c> and up, which no project in the corpus does and which
     /// reads as a mistake wherever it appears.</para>
     /// </summary>
@@ -351,13 +351,13 @@ public sealed class ProjectEditingTests : EditorTestBase
     public void OnlyAFileUnderTheProjectCanBeListedInIt()
     {
         JsonElement[] answers = Apply(
-            new Edit("within", null, Project, Inside("Shelf.pc"), null),
-            new Edit("within", null, Project, Inside("models", "Book.pc"), null),
+            new Edit("within", null, Project, Inside("Shelf.cm"), null),
+            new Edit("within", null, Project, Inside("models", "Book.cm"), null),
             new Edit(
                 "within",
                 null,
                 Project,
-                Path.Combine(Path.GetTempPath(), "profi-c-editing", "elsewhere", "Other.pc"),
+                Path.Combine(Path.GetTempPath(), "compass-editing", "elsewhere", "Other.cm"),
                 null));
 
         Assert.Multiple(() =>

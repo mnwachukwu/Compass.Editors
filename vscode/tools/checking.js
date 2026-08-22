@@ -3,7 +3,7 @@
 // The extension is loaded rather than reimplemented, with the editor stubbed out — so what this
 // reports is what a reader will actually see, and not a second opinion that agrees with it today.
 //
-// The diagnostics themselves are the compiler's: the extension runs `pc check`, so the compiler
+// The diagnostics themselves are the compiler's: the extension runs `cm check`, so the compiler
 // to ask is the first argument, letting a test hold a build of it rather than whatever is on
 // PATH.
 //
@@ -14,7 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const compilerPath = process.argv[2] || 'pc';
+const compilerPath = process.argv[2] || 'cm';
 const extension = path.join(__dirname, '..', 'extension.js');
 
 // Every entry the extension handed to the collection, in the order it handed them over, with the

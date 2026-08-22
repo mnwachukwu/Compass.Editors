@@ -1,7 +1,7 @@
 using System.Buffers.Binary;
 using System.Text.Json;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Holds the language's mark to being one drawing.</para>

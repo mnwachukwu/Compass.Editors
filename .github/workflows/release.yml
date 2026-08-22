@@ -1,7 +1,7 @@
 # Publishes the extension: to the Marketplace, and as a .vsix on a GitHub release.
 #
 # **A tag is the whole act.** Pushing `v1.0.0` runs this; nothing else does. The same shape as the
-# compiler's release, so that cutting a version of Profi-C is one habit rather than three.
+# compiler's release, so that cutting a version of Compass is one habit rather than three.
 #
 # **It runs the whole test suite first, on Linux, exactly as a push to main does.** A published
 # version cannot be replaced — the Marketplace refuses any version at or below one already there —
@@ -145,13 +145,13 @@ jobs:
       # again inside `publish` would upload one artifact and publish a different one.
       - name: Package
         working-directory: vscode
-        run: npx @vscode/vsce package --out profi-c.vsix
+        run: npx @vscode/vsce package --out compass.vsix
 
       - name: Keep the package
         uses: actions/upload-artifact@v7
         with:
           name: vsix
-          path: vscode/profi-c.vsix
+          path: vscode/compass.vsix
 
       # The Marketplace first, because it is the half that cannot be undone. A version published
       # there is permanent — it can be unlisted, never replaced — so if it fails, nothing else
@@ -164,7 +164,7 @@ jobs:
         # Nothing is asked about the token here. The `token` job above has already asked the
         # Marketplace, and this job does not start until it answered — a second check would be a
         # second answer to a settled question, and the one that failed would be whichever ran.
-        run: npx @vscode/vsce publish --packagePath profi-c.vsix
+        run: npx @vscode/vsce publish --packagePath compass.vsix
 
       # And the same file on the release, for anyone who would rather install from a .vsix than
       # from the Marketplace — an offline machine, or a reader pinning a version.
@@ -176,4 +176,4 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             --title "$GITHUB_REF_NAME" \
             --notes "Install from the Marketplace, or from the .vsix below. See vscode/CHANGELOG.md for what changed." \
-            vscode/profi-c.vsix
+            vscode/compass.vsix

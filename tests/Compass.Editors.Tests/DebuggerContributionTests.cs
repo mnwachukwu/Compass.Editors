@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace ProfiC.Editors.Tests;
+namespace Compass.Editors.Tests;
 
 /// <summary>
 /// <para>Holds the debugger's manifest to the code that implements it.</para>
@@ -111,22 +111,22 @@ public sealed class DebuggerContributionTests : EditorTestBase
     }
 
     /// <summary>
-    /// <para>Breakpoints are allowed in a Profi-C file.</para>
+    /// <para>Breakpoints are allowed in a Compass file.</para>
     /// <para>The one contribution with no graceful failure: without it VS Code refuses to place
-    /// a breakpoint in a <c>.pc</c> file at all, so the adapter is never asked to stop anywhere
+    /// a breakpoint in a <c>.cm</c> file at all, so the adapter is never asked to stop anywhere
     /// and every other part of this works perfectly on a program that never pauses.</para>
     /// </summary>
     [Test]
-    public void ABreakpointMayBeSetInAProfiCFile() =>
+    public void ABreakpointMayBeSetInACompassFile() =>
         Assert.That(
             Contributes().GetProperty("breakpoints")
                          .EnumerateArray()
                          .Select(allowed => allowed.GetProperty("language").GetString()),
-            Does.Contain("profi-c"));
+            Does.Contain("compass"));
 
     /// <summary>
     /// <para>A project file is launchable but holds no breakpoints.</para>
-    /// <para>Not an oversight in either direction. A <c>.pcp</c> lists the files to compile and
+    /// <para>Not an oversight in either direction. A <c>.cmp</c> lists the files to compile and
     /// contains no statements, so there is nothing in one to stop on — while starting a session
     /// from one is the ordinary way to debug a program of several files.</para>
     /// </summary>
@@ -149,8 +149,8 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(launchable, Does.Contain("profi-c-project"));
-            Assert.That(breakpoints, Does.Not.Contain("profi-c-project"));
+            Assert.That(launchable, Does.Contain("compass-project"));
+            Assert.That(breakpoints, Does.Not.Contain("compass-project"));
         });
     }
 
@@ -265,7 +265,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
     /// <summary>
     /// <para>Every launch this extension offers or starts reveals the Debug Console.</para>
-    /// <para>Printing is the whole of what most Profi-C programs do, so a run whose output lands
+    /// <para>Printing is the whole of what most Compass programs do, so a run whose output lands
     /// in a panel nobody opened is indistinguishable from a run that did nothing — and the first
     /// thing a reader concludes is that the language is broken rather than that a panel is
     /// closed.</para>
@@ -377,7 +377,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
         {
             Assert.That(
                 inTitle.Single().GetProperty("submenu").GetString(),
-                Is.EqualTo("profi-c.build"),
+                Is.EqualTo("compass.build"),
                 "Build is the only button of our own; Run belongs to the editor");
 
             Assert.That(order, Is.GreaterThan(TheRunButton), "or Build would sit left of Run");
@@ -389,7 +389,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
             Assert.That(
                 inTitle.Single().GetProperty("when").GetString(),
-                Does.Contain("profi-c"),
+                Does.Contain("compass"),
                 "a button on every file of every language would be somebody else's bug");
         });
     }
@@ -397,12 +397,12 @@ public sealed class DebuggerContributionTests : EditorTestBase
     /// <summary>
     /// <para>The run button offers both ways to run, and only where they mean something.</para>
     /// <para><c>editor/title/run</c> is shared: it is the one list behind every language's play
-    /// button. An entry there without a <c>when</c> is not a Profi-C button — it is a line reading
+    /// button. An entry there without a <c>when</c> is not a Compass button — it is a line reading
     /// "Run project associated with this file" hanging off the run button of every Python and C#
     /// file the reader opens.</para>
     /// </summary>
     [Test]
-    public void TheRunButtonOffersBothWaysToRunAndOnlyForProfiC()
+    public void TheRunButtonOffersBothWaysToRunAndOnlyForCompass()
     {
         JsonElement[] listed =
         [
@@ -415,13 +415,13 @@ public sealed class DebuggerContributionTests : EditorTestBase
         {
             Assert.That(
                 listed.Select(e => e.GetProperty("command").GetString()),
-                Is.EqualTo(new[] { "profi-c.runFile", "profi-c.runProject" }));
+                Is.EqualTo(new[] { "compass.runFile", "compass.runProject" }));
 
             foreach (JsonElement entry in listed)
             {
                 Assert.That(
                     entry.TryGetProperty("when", out JsonElement when)
-                        && when.GetString()!.Contains("profi-c"),
+                        && when.GetString()!.Contains("compass"),
                     Is.True,
                     $"{entry.GetProperty("command").GetString()} would show on every language");
             }
@@ -433,13 +433,13 @@ public sealed class DebuggerContributionTests : EditorTestBase
     public void BuildHoldsItsOwnCommands() =>
         Assert.That(
             Contributes().GetProperty("menus")
-                         .GetProperty("profi-c.build")
+                         .GetProperty("compass.build")
                          .EnumerateArray()
                          .Select(e => e.GetProperty("command").GetString()),
             Is.EqualTo(new[]
             {
-                "profi-c.buildFile", "profi-c.buildProject",
-                "profi-c.setOutputFolder", "profi-c.chooseTarget",
+                "compass.buildFile", "compass.buildProject",
+                "compass.setOutputFolder", "compass.chooseTarget",
             }));
 
     /// <summary>
@@ -460,10 +460,10 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(titles["profi-c.runFile"], Is.EqualTo("Run this file"));
+            Assert.That(titles["compass.runFile"], Is.EqualTo("Run this file"));
 
             Assert.That(
-                titles["profi-c.runProject"],
+                titles["compass.runProject"],
                 Is.EqualTo("Run project associated with this file"));
         });
     }
@@ -492,7 +492,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
                 Manifest().RootElement.GetProperty("activationEvents")
                           .EnumerateArray()
                           .Select(e => e.GetString()),
-                Does.Contain("onDebugDynamicConfigurations:profi-c"));
+                Does.Contain("onDebugDynamicConfigurations:compass"));
         });
     }
 
@@ -518,25 +518,25 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
         string[] inList =
         [
-            .. contributes.GetProperty("menus").GetProperty("profi-c.build")
+            .. contributes.GetProperty("menus").GetProperty("compass.build")
                           .EnumerateArray()
                           .Select(e => e.GetProperty("command").GetString()!),
         ];
 
         Assert.Multiple(() =>
         {
-            Assert.That(inTitle, Does.Contain("profi-c.build"));
+            Assert.That(inTitle, Does.Contain("compass.build"));
 
             Assert.That(
                 contributes.GetProperty("submenus").EnumerateArray()
                            .Select(s => s.GetProperty("id").GetString()),
-                Does.Contain("profi-c.build"),
+                Does.Contain("compass.build"),
                 "a menu placed in the title must be declared as a submenu to become a button");
 
             Assert.That(inList, Is.EqualTo(new[]
             {
-                "profi-c.buildFile", "profi-c.buildProject",
-                "profi-c.setOutputFolder", "profi-c.chooseTarget",
+                "compass.buildFile", "compass.buildProject",
+                "compass.setOutputFolder", "compass.chooseTarget",
             }));
         });
     }
@@ -553,7 +553,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
     {
         Dictionary<string, string> groups = Contributes()
             .GetProperty("menus")
-            .GetProperty("profi-c.build")
+            .GetProperty("compass.build")
             .EnumerateArray()
             .ToDictionary(
                 e => e.GetProperty("command").GetString()!,
@@ -561,22 +561,22 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(groups["profi-c.buildFile"], Is.EqualTo(groups["profi-c.buildProject"]));
+            Assert.That(groups["compass.buildFile"], Is.EqualTo(groups["compass.buildProject"]));
 
             Assert.That(
-                groups["profi-c.setOutputFolder"], Is.EqualTo(groups["profi-c.chooseTarget"]),
+                groups["compass.setOutputFolder"], Is.EqualTo(groups["compass.chooseTarget"]),
                 "both say where a build goes, so they sit together");
 
             Assert.That(
-                groups["profi-c.chooseTarget"],
-                Is.Not.EqualTo(groups["profi-c.buildFile"]),
+                groups["compass.chooseTarget"],
+                Is.Not.EqualTo(groups["compass.buildFile"]),
                 "a separator is a change of group, and there is nothing else that draws one");
         });
     }
 
     /// <summary>
     /// <para>Three problem matchers, one per severity the compiler writes.</para>
-    /// <para>VS Code's severities are error, warning and info. Profi-C's third is
+    /// <para>VS Code's severities are error, warning and info. Compass's third is
     /// <c>opinion</c>, which VS Code has never heard of — so a single matcher capturing the word
     /// would fall back to its default for every one of them, painting the Problems panel red
     /// with the one severity that means "this compiles fine, but". Each severity gets a matcher
@@ -594,10 +594,10 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
         Assert.Multiple(() =>
         {
-            Assert.That(matchers["profi-c-error"], Is.EqualTo("error"));
-            Assert.That(matchers["profi-c-warning"], Is.EqualTo("warning"));
+            Assert.That(matchers["compass-error"], Is.EqualTo("error"));
+            Assert.That(matchers["compass-warning"], Is.EqualTo("warning"));
 
-            Assert.That(matchers["profi-c-opinion"], Is.EqualTo("info"),
+            Assert.That(matchers["compass-opinion"], Is.EqualTo("info"),
                         "an opinion is not a problem, and must not be shown as one");
         });
     }
@@ -608,9 +608,9 @@ public sealed class DebuggerContributionTests : EditorTestBase
     /// matcher that matches nothing is silent: the build runs, the terminal fills with
     /// diagnostics, and the Problems panel stays empty as though everything were fine.</para>
     /// </summary>
-    [TestCase("error", @"samples\bank.pc(19,1): error PC0501: The model 'Book' cannot be emitted yet.")]
-    [TestCase("warning", @"D:\x\warn.pc(4,9): warning PC0403: This can never be reached.")]
-    [TestCase("info", @"/home/matt/noisy.pc(5,9): opinion PC0406: This loop has no condition.")]
+    [TestCase("error", @"samples\bank.cm(19,1): error CM0501: The model 'Book' cannot be emitted yet.")]
+    [TestCase("warning", @"D:\x\warn.cm(4,9): warning CM0403: This can never be reached.")]
+    [TestCase("info", @"/home/matt/noisy.cm(5,9): opinion CM0406: This loop has no condition.")]
     public void AMatcherReadsWhatTheCompilerWrites(string severity, string line)
     {
         JsonElement matcher = Contributes()
@@ -630,7 +630,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
             Assert.That(
                 read.Groups[pattern.GetProperty("code").GetInt32()].Value,
-                Does.StartWith("PC"),
+                Does.StartWith("CM"),
                 "the code is what a reader searches the diagnostics appendix for");
         });
     }
@@ -644,9 +644,9 @@ public sealed class DebuggerContributionTests : EditorTestBase
     {
         string[] lines =
         [
-            "a.pc(1,1): error PC0501: no.",
-            "a.pc(1,1): warning PC0403: no.",
-            "a.pc(1,1): opinion PC0406: no.",
+            "a.cm(1,1): error CM0501: no.",
+            "a.cm(1,1): warning CM0403: no.",
+            "a.cm(1,1): opinion CM0406: no.",
         ];
 
         Assert.Multiple(() =>
@@ -689,7 +689,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
             Assert.That(
                 script,
-                Does.Contain("$profi-c-error"),
+                Does.Contain("$compass-error"),
                 "the task has to name the matchers, or nothing reads its output");
         });
     }
@@ -722,7 +722,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
     /// <summary>
     /// <para>A compiler too old to debug with is reported rather than tried.</para>
-    /// <para>The failure this exists for gives a reader nothing at all. An older <c>pc</c> meets
+    /// <para>The failure this exists for gives a reader nothing at all. An older <c>cm</c> meets
     /// <c>debug</c>, prints "unknown command" to its standard output, and exits zero — so the
     /// editor sees a process that started correctly and then finished, and pressing Run does
     /// nothing, says nothing, and writes nothing to a log. It cost an evening once.</para>
@@ -756,7 +756,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
     /// </para>
     /// <para>A symbol provider is all the editor needs — no language server — but where the
     /// symbols come from is the decision that matters. Reading the file in JavaScript would put
-    /// a second definition of Profi-C in this repository, and the two would agree until a
+    /// a second definition of Compass in this repository, and the two would agree until a
     /// construct was added to one of them: an outline that silently stops listing something,
     /// with nothing failing anywhere.</para>
     /// </summary>
@@ -865,7 +865,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
 
             Assert.That(
                 script,
-                Does.Contain(":profi-c"),
+                Does.Contain(":compass"),
                 "scoped to this language, or it repaints every other one");
 
             Assert.That(
@@ -907,7 +907,7 @@ public sealed class DebuggerContributionTests : EditorTestBase
             Assert.That(Version.TryParse(version, out _), Is.True, version);
 
             Assert.That(
-                Regex.Matches(instructions, @"profi-c-(\d+\.\d+\.\d+)")
+                Regex.Matches(instructions, @"compass-(\d+\.\d+\.\d+)")
                      .Select(f => f.Groups[1].Value),
                 Is.Empty,
                 "the folder to install into carries no version, so nothing there can go stale");

@@ -1,19 +1,19 @@
-// Working on a .pcp from inside the editor: making one, saying what it builds, and clearing up
+// Working on a .cmp from inside the editor: making one, saying what it builds, and clearing up
 // after a build.
 //
-// **These are the only place in this extension that writes Profi-C's own file formats**, which is
+// **These are the only place in this extension that writes Compass's own file formats**, which is
 // worth being uneasy about. Everything else here asks the compiler and reports what it said —
 // which project claims a file, what a file declares, whether a program checks — precisely so that
 // no second reader of a format exists to drift from the first.
 //
-// What makes it tolerable is that none of this reads a `.pcp`. Adding a source is putting a line
+// What makes it tolerable is that none of this reads a `.cmp`. Adding a source is putting a line
 // in before `end project`; removing one is taking a line out that names what was asked about;
 // setting the entry point is replacing a line that opens with the word. No structure is inferred
 // and nothing is rewritten wholesale, so a format that gains a word gains it here for free.
 //
 // And the language server validates the file as it is edited, so an edit that lands wrong is in
 // the Problems panel before the reader has looked away. Anything needing more understanding than
-// this belongs in `pc` rather than here.
+// this belongs in `cm` rather than here.
 
 const path = require('path');
 
@@ -66,7 +66,7 @@ function indentOf(lines) {
 /**
  * The text of a project with one more `source` in it, or null where it already lists that path.
  *
- * Written with forward slashes whatever the platform, matching how a `.pcp` names paths — a file
+ * Written with forward slashes whatever the platform, matching how a `.cmp` names paths — a file
  * listed with backslashes reads on one machine and not on the next, which is the kind of thing
  * that is found by somebody else, later, on a different computer.
  */
@@ -183,7 +183,7 @@ function sourceNamed(line) {
     return written ? written[1] : null;
 }
 
-/** A path as a `.pcp` names it: relative to the project, with forward slashes. */
+/** A path as a `.cmp` names it: relative to the project, with forward slashes. */
 function relativeTo(projectPath, filePath) {
     return path.relative(path.dirname(projectPath), filePath).split(path.sep).join('/');
 }
