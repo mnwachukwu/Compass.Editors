@@ -1,5 +1,5 @@
 {
-  "name": "compass",
+  "name": "compass-lang",
   "displayName": "Compass",
   "description": "Syntax highlighting, debugging, and a language server for Compass.",
   "version": "1.0.1",
@@ -7,7 +7,6 @@
   "license": "MIT",
   "icon": "icon.png",
 
-  "//galleryBanner": "The strip the listing puts the icon on: the same near-black as the site and the shared-link card, so the three agree. 'theme' says whether the Marketplace writes its own text light or dark over it.",
   "galleryBanner": {
     "color": "#14161a",
     "theme": "dark"

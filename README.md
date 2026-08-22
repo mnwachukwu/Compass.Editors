@@ -166,11 +166,11 @@ manifest is absent from the menu for a reason recorded only in an extension host
 
 ## Installing it
 
-From the Marketplace, as `Pluperfect.compass` — in VS Code, search the Extensions view for
+From the Marketplace, as `Pluperfect.compass-lang` — in VS Code, search the Extensions view for
 Compass, or:
 
 ```bash
-code --install-extension Pluperfect.compass
+code --install-extension Pluperfect.compass-lang
 ```
 
 **It needs the compiler.** The grammar colors a file on its own, but the debugger, the language
