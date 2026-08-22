@@ -7,8 +7,7 @@ The extension is Compass, and the compiler it runs is `cm`.
 - Highlighting, projects and debugging read `.cm` source and `.cmp` project files.
 - The Problems panel is filled from diagnostics identified `CM0001` and upward.
 - Commands are named `compass.*`, and the debug type is `compass`.
-
-Renamed from Profi-C. It is listed as `Pluperfect.compass`.
+- Listed as `Pluperfect.compass-editor`.
 
 ## 1.0.0
 
