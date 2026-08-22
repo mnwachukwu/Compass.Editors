@@ -1,6 +1,6 @@
 {
-  "name": "compass-lang",
-  "displayName": "Compass",
+  "name": "compass-editor",
+  "displayName": "Compass Editor",
   "description": "Syntax highlighting, debugging, and a language server for Compass.",
   "version": "1.0.1",
   "publisher": "Pluperfect",
