@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.2
+
+The extension is unchanged. This version exists so the published listing carries the right
+identifier, `Pluperfect.compass-editor`.
+
 ## 1.0.1
 
 The extension is Compass, and the compiler it runs is `cm`.

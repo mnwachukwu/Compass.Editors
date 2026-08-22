@@ -2,7 +2,7 @@
   "name": "compass-editor",
   "displayName": "Compass Editor",
   "description": "Syntax highlighting, debugging, and a language server for Compass.",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "publisher": "Pluperfect",
   "license": "MIT",
   "icon": "icon.png",
